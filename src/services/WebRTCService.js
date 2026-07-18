@@ -1,8 +1,8 @@
 import {
   RTCPeerConnection,
-  mediaDevices,
   RTCSessionDescription,
-  RTCIceCandidate
+  RTCIceCandidate,
+  mediaDevices
 } from "react-native-webrtc";
 
 const configuration = {
@@ -21,8 +21,7 @@ let localStream = null;
 
 export async function createPeer() {
 
-  peerConnection =
-    new RTCPeerConnection(configuration);
+  peerConnection = new RTCPeerConnection(configuration);
 
   return peerConnection;
 
@@ -30,31 +29,25 @@ export async function createPeer() {
 
 export async function getLocalStream(video = false) {
 
-  localStream =
-    await mediaDevices.getUserMedia({
+  localStream = await mediaDevices.getUserMedia({
 
-      audio: true,
+    audio: true,
 
-      video: video
-        ? {
-            facingMode: "user",
-            width: 640,
-            height: 480
-          }
-        : false
+    video: video
+      ? {
+          facingMode: "user",
+          width: 640,
+          height: 480
+        }
+      : false
 
-    });
+  });
 
-  localStream
-    .getTracks()
-    .forEach(track => {
+  localStream.getTracks().forEach(track => {
 
-      peerConnection.addTrack(
-        track,
-        localStream
-      );
+    peerConnection.addTrack(track, localStream);
 
-    });
+  });
 
   return localStream;
 
@@ -62,12 +55,9 @@ export async function getLocalStream(video = false) {
 
 export async function createOffer() {
 
-  const offer =
-    await peerConnection.createOffer();
+  const offer = await peerConnection.createOffer();
 
-  await peerConnection.setLocalDescription(
-    offer
-  );
+  await peerConnection.setLocalDescription(offer);
 
   return offer;
 
@@ -75,21 +65,20 @@ export async function createOffer() {
 
 export async function createAnswer() {
 
-  const answer =
-    await peerConnection.createAnswer();
+  const answer = await peerConnection.createAnswer();
 
-  await peerConnection.setLocalDescription(
-    answer
-  );
+  await peerConnection.setLocalDescription(answer);
 
   return answer;
 
 }
 
-export async function setRemoteDescription(desc) {
+export async function setRemoteDescription(description) {
 
   await peerConnection.setRemoteDescription(
-    new RTCSessionDescription(desc)
+
+    new RTCSessionDescription(description)
+
   );
 
 }
@@ -97,46 +86,34 @@ export async function setRemoteDescription(desc) {
 export async function addIceCandidate(candidate) {
 
   await peerConnection.addIceCandidate(
+
     new RTCIceCandidate(candidate)
+
   );
 
 }
 
 export function onIceCandidate(callback) {
 
-  peerConnection.onicecandidate =
-    event => {
+  peerConnection.onicecandidate = event => {
 
-      if (event.candidate) {
+    if (event.candidate) {
 
-        callback(event.candidate);
+      callback(event.candidate);
 
-      }
+    }
 
-    };
+  };
 
 }
 
 export function onRemoteStream(callback) {
 
-  peerConnection.ontrack =
-    event => {
+  peerConnection.ontrack = event => {
 
-      callback(event.streams[0]);
+    callback(event.streams[0]);
 
-    };
-
-}
-
-export function getPeerConnection() {
-
-  return peerConnection;
-
-}
-
-export function getCurrentStream() {
-
-  return localStream;
+  };
 
 }
 
@@ -144,9 +121,7 @@ export function closeConnection() {
 
   if (localStream) {
 
-    localStream
-      .getTracks()
-      .forEach(track => track.stop());
+    localStream.getTracks().forEach(track => track.stop());
 
   }
 
