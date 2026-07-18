@@ -4,6 +4,7 @@ import {
   Text,
   Image,
   TouchableOpacity,
+  Linking,
   StyleSheet
 } from "react-native";
 
@@ -24,6 +25,16 @@ export default function MessageBubble({ message }) {
 
   }
 
+  async function openFile() {
+
+    if (!message.fileUrl) return;
+
+    await Linking.openURL(
+      message.fileUrl
+    );
+
+  }
+
   function formatTime() {
 
     if (!message.createdAt?.seconds)
@@ -37,6 +48,39 @@ export default function MessageBubble({ message }) {
       hour:"2-digit",
       minute:"2-digit"
     });
+
+  }
+
+  function fileIcon() {
+
+    if (!message.fileName)
+      return "📄";
+
+    const name =
+      message.fileName.toLowerCase();
+
+    if (name.endsWith(".pdf"))
+      return "📕";
+
+    if (
+      name.endsWith(".doc") ||
+      name.endsWith(".docx")
+    )
+      return "📘";
+
+    if (
+      name.endsWith(".xls") ||
+      name.endsWith(".xlsx")
+    )
+      return "📗";
+
+    if (
+      name.endsWith(".zip") ||
+      name.endsWith(".rar")
+    )
+      return "🗜️";
+
+    return "📄";
 
   }
 
@@ -63,7 +107,7 @@ export default function MessageBubble({ message }) {
 
         <Image
           source={{
-            uri:message.imageUrl
+            uri: message.imageUrl
           }}
           style={styles.image}
         />
@@ -77,8 +121,38 @@ export default function MessageBubble({ message }) {
         >
 
           <Text style={styles.voice}>
-            ▶️ Play Voice
+            ▶️ Play Voice Message
           </Text>
+
+        </TouchableOpacity>
+
+      ) : null}
+
+      {message.fileUrl ? (
+
+        <TouchableOpacity
+          style={styles.fileBox}
+          onPress={openFile}
+        >
+
+          <Text style={styles.fileIcon}>
+            {fileIcon()}
+          </Text>
+
+          <View style={{flex:1}}>
+
+            <Text
+              numberOfLines={1}
+              style={styles.fileName}
+            >
+              {message.fileName}
+            </Text>
+
+            <Text style={styles.download}>
+              Tap to Open / Download
+            </Text>
+
+          </View>
 
         </TouchableOpacity>
 
@@ -139,13 +213,37 @@ const styles = StyleSheet.create({
   voice:{
     color:"#075E54",
     fontWeight:"bold",
-    marginTop:5
+    marginTop:8
+  },
+
+  fileBox:{
+    flexDirection:"row",
+    alignItems:"center",
+    backgroundColor:"#F2F2F2",
+    padding:10,
+    borderRadius:10,
+    marginTop:8
+  },
+
+  fileIcon:{
+    fontSize:30,
+    marginRight:10
+  },
+
+  fileName:{
+    fontWeight:"bold",
+    fontSize:15
+  },
+
+  download:{
+    color:"#075E54",
+    marginTop:4
   },
 
   footer:{
     flexDirection:"row",
     justifyContent:"flex-end",
-    marginTop:5
+    marginTop:8
   },
 
   time:{
