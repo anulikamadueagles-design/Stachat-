@@ -30,6 +30,11 @@ import {
 } from "../services/MediaService";
 
 import {
+  pickDocument,
+  uploadDocument
+} from "../services/FileService";
+
+import {
   startRecording,
   stopRecording
 } from "../services/VoiceService";
@@ -94,6 +99,26 @@ export default function PrivateChatScreen({ route }) {
 
   }
 
+  async function sendDocument() {
+
+    const file = await pickDocument();
+
+    if (!file) return;
+
+    const fileUrl =
+      await uploadDocument(file, user.uid);
+
+    await sendPrivateMessage(
+      user,
+      receiver,
+      {
+        fileName: file.name,
+        fileUrl
+      }
+    );
+
+  }
+
   async function toggleRecording() {
 
     if (!recording) {
@@ -152,6 +177,13 @@ export default function PrivateChatScreen({ route }) {
       />
 
       <View style={styles.bottom}>
+
+        <TouchableOpacity
+          style={styles.icon}
+          onPress={sendDocument}
+        >
+          <Text>📎</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.icon}
