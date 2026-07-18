@@ -13,24 +13,27 @@ export default function IncomingCallScreen({
 
   const { call } = route.params;
 
-  function accept() {
+  function answer() {
 
-    navigation.replace(
-      call.type === "video"
-        ? "VideoCall"
-        : "VoiceCall",
-      {
-        user: {
-          uid: call.callerUid,
-          displayName: call.callerName
-        },
-        callId: call.id
-      }
-    );
+    if (call.type === "video") {
+
+      navigation.replace(
+        "VideoCall",
+        { user: { displayName: call.callerName } }
+      );
+
+    } else {
+
+      navigation.replace(
+        "VoiceCall",
+        { user: { displayName: call.callerName } }
+      );
+
+    }
 
   }
 
-  function decline() {
+  function reject() {
 
     navigation.goBack();
 
@@ -41,7 +44,7 @@ export default function IncomingCallScreen({
     <View style={styles.container}>
 
       <Text style={styles.title}>
-        Incoming {call.type} call
+        Incoming {call.type} Call
       </Text>
 
       <Text style={styles.name}>
@@ -52,7 +55,7 @@ export default function IncomingCallScreen({
 
         <TouchableOpacity
           style={styles.accept}
-          onPress={accept}
+          onPress={answer}
         >
           <Text style={styles.text}>
             Accept
@@ -60,11 +63,11 @@ export default function IncomingCallScreen({
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.decline}
-          onPress={decline}
+          style={styles.reject}
+          onPress={reject}
         >
           <Text style={styles.text}>
-            Decline
+            Reject
           </Text>
         </TouchableOpacity>
 
@@ -87,38 +90,38 @@ const styles = StyleSheet.create({
 
   title:{
     color:"#fff",
-    fontSize:24,
-    marginBottom:10
+    fontSize:28,
+    fontWeight:"bold"
   },
 
   name:{
     color:"#fff",
-    fontSize:32,
-    fontWeight:"bold",
-    marginBottom:50
+    fontSize:22,
+    marginTop:20
   },
 
   buttons:{
-    flexDirection:"row"
+    flexDirection:"row",
+    marginTop:60
   },
 
   accept:{
-    backgroundColor:"#25D366",
+    backgroundColor:"green",
     padding:18,
     borderRadius:30,
-    marginHorizontal:20
+    marginRight:20
   },
 
-  decline:{
-    backgroundColor:"#E53935",
+  reject:{
+    backgroundColor:"red",
     padding:18,
-    borderRadius:30,
-    marginHorizontal:20
+    borderRadius:30
   },
 
   text:{
     color:"#fff",
-    fontWeight:"bold"
+    fontWeight:"bold",
+    fontSize:18
   }
 
 });
