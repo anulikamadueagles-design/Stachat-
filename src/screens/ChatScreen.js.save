@@ -1,0 +1,231 @@
+
+
+
+
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={
+          Platform.OS === "ios"
+            ? "padding"
+            : undefined
+        }
+      >
+
+        <View style={styles.header}>
+
+          <View style={styles.headerLeft}>
+
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                JD
+              </Text>
+            </View>
+
+            <View>
+
+              <Text style={styles.name}>
+                John David
+              </Text>
+
+              <Text style={styles.status}>
+                online
+              </Text>
+
+            </View>
+
+          </View>
+
+          <View style={styles.headerRight}>
+
+            <TouchableOpacity
+              style={styles.icon}
+            >
+              <Text style={styles.iconText}>
+                📞
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.icon}
+            >
+              <Text style={styles.iconText}>
+                🎥
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.icon}
+            >
+              <Text style={styles.iconText}>
+                ⋮
+              </Text>
+            </TouchableOpacity>
+
+          </View>
+
+        </View>
+
+        <FlatList
+          ref={listRef}
+          data={messages}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{
+            padding: 15,
+          }}        />
+
+        <View style={styles.inputContainer}>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Type a message..."
+            value={input}
+            onChangeText={setInput}
+          />
+
+          <TouchableOpacity
+            style={styles.sendButton}
+            onPress={sendMessage}
+          >
+            <Text style={styles.sendText}>
+              Send
+            </Text>
+          </TouchableOpacity>
+
+        </View>
+
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+
+  container: {
+    flex: 1,
+    backgroundColor: "#ECE5DD",
+  },
+
+  header: {
+    height: 70,
+    backgroundColor: "#075E54",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 15,
+  },
+
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  avatar: {
+    width: 45,
+    height: 45,
+    borderRadius: 23,
+    backgroundColor: "#128C7E",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+
+  avatarText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 18,
+  },
+
+  name: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+
+  status: {
+    color: "#D8FDD2",
+    fontSize: 12,
+  },
+
+  headerRight: {
+    flexDirection: "row",
+  },
+
+  icon: {
+    marginLeft: 18,
+  },
+
+  iconText: {
+    color: "#fff",
+    fontSize: 20,
+  },
+
+  messageRow: {
+    marginVertical: 5,
+  },
+
+  myRow: {
+    alignItems: "flex-end",
+  },
+
+  otherRow: {
+    alignItems: "flex-start",
+  },
+
+  bubble: {
+    padding: 12,
+    borderRadius: 10,
+    maxWidth: "80%",
+  },
+
+  myBubble: {
+    backgroundColor: "#DCF8C6",
+  },
+
+  otherBubble: {
+    backgroundColor: "#FFFFFF",
+  },
+
+  message: {
+    fontSize: 16,
+  },
+
+  time: {
+    marginTop: 5,
+    alignSelf: "flex-end",
+    fontSize: 10,
+    color: "#666",
+  },
+
+  inputContainer: {
+    flexDirection: "row",
+    padding: 10,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+  },
+
+  input: {
+    flex: 1,
+    backgroundColor: "#F2F2F2",
+    borderRadius: 25,
+    paddingHorizontal: 15,
+    height: 45,
+  },
+
+  sendButton: {
+    marginLeft: 10,
+    backgroundColor: "#075E54",
+    paddingHorizontal: 20,
+    height: 45,
+    borderRadius: 25,
+    justifyContent: "center",
+  },
+
+  sendText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+
+});
