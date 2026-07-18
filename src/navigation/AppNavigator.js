@@ -14,6 +14,8 @@ import SearchScreen from "../screens/SearchScreen";
 import GroupsScreen from "../screens/GroupsScreen";
 import GroupChatScreen from "../screens/GroupChatScreen";
 import ProfileScreen from "../screens/ProfileScreen";
+import VoiceCallScreen from "../screens/VoiceCallScreen";
+import VideoCallScreen from "../screens/VideoCallScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -99,6 +101,16 @@ export default function AppNavigator() {
           component={GroupChatScreen}
         />
 
+        <Stack.Screen
+          name="VoiceCall"
+          component={VoiceCallScreen}
+        />
+
+        <Stack.Screen
+          name="VideoCall"
+          component={VideoCallScreen}
+        />
+
       </Stack.Navigator>
 
     </NavigationContainer>
@@ -106,3 +118,5 @@ export default function AppNavigator() {
   );
 
 }
+
+
