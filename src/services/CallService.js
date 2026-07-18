@@ -3,100 +3,60 @@ import {
   setDoc,
   updateDoc,
   onSnapshot,
+  deleteDoc,
   serverTimestamp
 } from "firebase/firestore";
 
-import { db } from "../config/firebase";
+import { db } from "./firebase";
 
-export async function startVoiceCall(caller, receiver) {
+export async function startCall(callId, caller, receiver, type) {
 
-  const callId =
-    `${caller.uid}_${receiver.uid}_${Date.now()}`;
+  await setDoc(doc(db, "calls", callId), {
 
-  await setDoc(
-    doc(db, "calls", callId),
-    {
-      id: callId,
-      type: "voice",
-      callerUid: caller.uid,
-      callerName:
-        caller.displayName || caller.email,
-      receiverUid: receiver.uid,
-      receiverName:
-        receiver.displayName || receiver.email,
-      status: "ringing",
-      createdAt: serverTimestamp()
-    }
-  );
+    callerId: caller.uid,
+    callerName: caller.displayName,
 
-  return callId;
+    receiverId: receiver.uid,
+    receiverName: receiver.displayName,
 
-}
+    type,
 
-export async function startVideoCall(caller, receiver) {
+    status: "ringing",
 
-  const callId =
-    `${caller.uid}_${receiver.uid}_${Date.now()}`;
+    createdAt: serverTimestamp()
 
-  await setDoc(
-    doc(db, "calls", callId),
-    {
-      id: callId,
-      type: "video",
-      callerUid: caller.uid,
-      callerName:
-        caller.displayName || caller.email,
-      receiverUid: receiver.uid,
-      receiverName:
-        receiver.displayName || receiver.email,
-      status: "ringing",
-      createdAt: serverTimestamp()
-    }
-  );
-
-  return callId;
+  });
 
 }
 
 export async function answerCall(callId) {
 
-  await updateDoc(
-    doc(db, "calls", callId),
-    {
-      status: "connected"
-    }
-  );
+  await updateDoc(doc(db, "calls", callId), {
+
+    status: "answered"
+
+  });
 
 }
 
 export async function endCall(callId) {
 
-  await updateDoc(
-    doc(db, "calls", callId),
-    {
-      status: "ended",
-      endedAt: serverTimestamp()
-    }
-  );
+  await deleteDoc(doc(db, "calls", callId));
 
 }
 
-export function subscribeToCall(
-  callId,
-  callback
-) {
+export function listenCall(callId, callback) {
 
   return onSnapshot(
+
     doc(db, "calls", callId),
-    (snapshot) => {
 
-      if (snapshot.exists()) {
+    snapshot => {
 
-        callback(snapshot.data());
-
-      }
+      callback(snapshot.data());
 
     }
+
   );
 
 }
