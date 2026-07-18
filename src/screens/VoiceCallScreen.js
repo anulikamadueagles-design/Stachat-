@@ -1,8 +1,4 @@
-import React, {
-  useEffect,
-  useState
-} from "react";
-
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,46 +7,49 @@ import {
 } from "react-native";
 
 import {
-  endCall
-} from "../services/CallService";
+  createPeer,
+  getLocalStream,
+  closeConnection
+} from "../services/WebRTCService";
 
-export default function VoiceCallScreen({
-  route,
-  navigation
-}) {
+export default function VoiceCallScreen({ route, navigation }) {
 
-  const { user, callId } = route.params;
-
-  const [seconds, setSeconds] = useState(0);
-  const [mute, setMute] = useState(false);
-  const [speaker, setSpeaker] = useState(false);
+  const [status, setStatus] = useState("Connecting...");
 
   useEffect(() => {
 
-    const timer = setInterval(() => {
-      setSeconds(value => value + 1);
-    }, 1000);
+    async function startCall() {
 
-    return () => clearInterval(timer);
+      try {
+
+        await createPeer();
+        await getLocalStream(false);
+
+        setStatus("Connected");
+
+      } catch (e) {
+
+        setStatus("Connection Failed");
+
+      }
+
+    }
+
+    startCall();
+
+    return () => {
+
+      closeConnection();
+
+    };
 
   }, []);
 
-  async function hangUp() {
+  function endCall() {
 
-    await endCall(callId);
+    closeConnection();
 
     navigation.goBack();
-
-  }
-
-  function formatTime() {
-
-    const min = Math.floor(seconds / 60);
-    const sec = seconds % 60;
-
-    return `${min}:${sec
-      .toString()
-      .padStart(2,"0")}`;
 
   }
 
@@ -59,51 +58,23 @@ export default function VoiceCallScreen({
     <View style={styles.container}>
 
       <Text style={styles.name}>
-        {user.displayName || user.email}
+        {route?.params?.user?.displayName || "Voice Call"}
       </Text>
 
       <Text style={styles.status}>
-        Voice Call
+        {status}
       </Text>
 
-      <Text style={styles.timer}>
-        {formatTime()}
-      </Text>
+      <TouchableOpacity
+        style={styles.endButton}
+        onPress={endCall}
+      >
 
-      <View style={styles.buttons}>
+        <Text style={styles.endText}>
+          End Call
+        </Text>
 
-        <TouchableOpacity
-          style={styles.control}
-          onPress={() =>
-            setMute(!mute)
-          }
-        >
-          <Text>
-            {mute ? "🎤 Off" : "🎤 On"}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.control}
-          onPress={() =>
-            setSpeaker(!speaker)
-          }
-        >
-          <Text>
-            {speaker ? "🔊 On" : "🔈 Off"}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.end}
-          onPress={hangUp}
-        >
-          <Text style={styles.endText}>
-            End
-          </Text>
-        </TouchableOpacity>
-
-      </View>
+      </TouchableOpacity>
 
     </View>
 
@@ -115,50 +86,34 @@ const styles = StyleSheet.create({
 
   container:{
     flex:1,
-    backgroundColor:"#075E54",
     justifyContent:"center",
-    alignItems:"center"
+    alignItems:"center",
+    backgroundColor:"#075E54"
   },
 
   name:{
-    color:"#fff",
     fontSize:28,
+    color:"#fff",
     fontWeight:"bold"
   },
 
   status:{
+    fontSize:18,
     color:"#ddd",
-    marginTop:10,
-    fontSize:18
+    marginTop:10
   },
 
-  timer:{
-    color:"#fff",
-    marginTop:20,
-    fontSize:20
-  },
-
-  buttons:{
-    flexDirection:"row",
-    marginTop:60
-  },
-
-  control:{
-    backgroundColor:"#fff",
-    padding:15,
-    borderRadius:30,
-    marginHorizontal:10
-  },
-
-  end:{
+  endButton:{
+    marginTop:60,
     backgroundColor:"#E53935",
-    padding:15,
-    borderRadius:30,
-    marginHorizontal:10
+    paddingHorizontal:35,
+    paddingVertical:15,
+    borderRadius:30
   },
 
   endText:{
     color:"#fff",
+    fontSize:18,
     fontWeight:"bold"
   }
 
