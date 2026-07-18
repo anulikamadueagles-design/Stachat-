@@ -1,125 +1,55 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  TextInput,
-  FlatList,
-  TouchableOpacity,
-  Text,
-  StyleSheet
+import React,{
+useState
+} from "react";
+
+import{
+View,
+TextInput,
+FlatList,
+Text,
+StyleSheet
 } from "react-native";
 
-import {
-  collection,
-  onSnapshot
-} from "firebase/firestore";
+export default function SearchScreen(){
 
-import { db } from "../config/firebase";
+const[text,setText]=useState("");
 
-export default function SearchScreen({ navigation }) {
+return(
 
-  const [users, setUsers] = useState([]);
-  const [search, setSearch] = useState("");
+<View style={styles.container}>
 
-  useEffect(() => {
+<TextInput
+style={styles.input}
+placeholder="Search chats..."
+value={text}
+onChangeText={setText}
+/>
 
-    const unsubscribe = onSnapshot(
-      collection(db, "users"),
-      snapshot => {
+<FlatList
+data={[]}
+keyExtractor={(item,index)=>index.toString()}
+renderItem={({item})=><Text>{item}</Text>}
+/>
 
-        const list = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+</View>
 
-        setUsers(list);
-
-      }
-    );
-
-    return unsubscribe;
-
-  }, []);
-
-  const filtered = users.filter(user =>
-    user.displayName
-      ?.toLowerCase()
-      .includes(search.toLowerCase())
-  );
-
-  return (
-
-    <View style={styles.container}>
-
-      <TextInput
-        style={styles.search}
-        placeholder="Search users..."
-        value={search}
-        onChangeText={setSearch}
-      />
-
-      <FlatList
-        data={filtered}
-        keyExtractor={item => item.uid}
-        renderItem={({ item }) => (
-
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() =>
-              navigation.navigate(
-                "PrivateChat",
-                { user: item }
-              )
-            }
-          >
-
-            <Text style={styles.name}>
-              {item.displayName}
-            </Text>
-
-            <Text style={styles.email}>
-              {item.email}
-            </Text>
-
-          </TouchableOpacity>
-
-        )}
-      />
-
-    </View>
-
-  );
+);
 
 }
 
-const styles = StyleSheet.create({
+const styles=StyleSheet.create({
 
-  container:{
-    flex:1,
-    backgroundColor:"#ECE5DD"
-  },
+container:{
+flex:1,
+backgroundColor:"#ECE5DD",
+padding:15
+},
 
-  search:{
-    backgroundColor:"#fff",
-    margin:10,
-    borderRadius:10,
-    padding:15
-  },
-
-  card:{
-    backgroundColor:"#fff",
-    padding:15,
-    marginHorizontal:10,
-    marginBottom:10,
-    borderRadius:10
-  },
-
-  name:{
-    fontWeight:"bold",
-    fontSize:17
-  },
-
-  email:{
-    color:"gray"
-  }
+input:{
+backgroundColor:"#fff",
+padding:12,
+borderRadius:10,
+marginBottom:15
+}
 
 });
