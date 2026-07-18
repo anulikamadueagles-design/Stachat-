@@ -1,41 +1,30 @@
-import React, { useContext } from "react";
+import React from "react";
 import {
   View,
   Text,
-  StyleSheet,
-  Image
+  Image,
+  TouchableOpacity,
+  StyleSheet
 } from "react-native";
 
-import { AuthContext } from "../context/AuthContext";
+import { Audio } from "expo-av";
 
 export default function MessageBubble({ message }) {
 
-  const { user } = useContext(AuthContext);
+  async function playVoice() {
 
-  const mine =
-    message.senderUid === user?.uid;
+    if (!message.voiceUrl) return;
 
-  function getStatus() {
+    const { sound } =
+      await Audio.Sound.createAsync({
+        uri: message.voiceUrl
+      });
 
-    switch (message.status) {
-
-      case "sent":
-        return "✓";
-
-      case "delivered":
-        return "✓✓";
-
-      case "read":
-        return "✓✓";
-
-      default:
-        return "";
-
-    }
+    await sound.playAsync();
 
   }
 
-  function getTime() {
+  function formatTime() {
 
     if (!message.createdAt?.seconds)
       return "";
@@ -44,9 +33,9 @@ export default function MessageBubble({ message }) {
       message.createdAt.seconds * 1000
     );
 
-    return date.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit"
+    return date.toLocaleTimeString([],{
+      hour:"2-digit",
+      minute:"2-digit"
     });
 
   }
@@ -56,61 +45,58 @@ export default function MessageBubble({ message }) {
     <View
       style={[
         styles.container,
-        mine
-          ? styles.right
-          : styles.left
+        message.mine
+          ? styles.mine
+          : styles.other
       ]}
     >
 
-      <View
-        style={[
-          styles.bubble,
-          mine
-            ? styles.myBubble
-            : styles.otherBubble
-        ]}
-      >
+      {message.text ? (
 
-        {message.imageUrl ? (
+        <Text style={styles.text}>
+          {message.text}
+        </Text>
 
-          <Image
-            source={{ uri: message.imageUrl }}
-            style={styles.image}
-            resizeMode="cover"
-          />
+      ) : null}
 
-        ) : null}
+      {message.imageUrl ? (
 
-        {message.text ? (
+        <Image
+          source={{
+            uri:message.imageUrl
+          }}
+          style={styles.image}
+        />
 
-          <Text style={styles.message}>
-            {message.text}
+      ) : null}
+
+      {message.voiceUrl ? (
+
+        <TouchableOpacity
+          onPress={playVoice}
+        >
+
+          <Text style={styles.voice}>
+            ▶️ Play Voice
           </Text>
 
-        ) : null}
+        </TouchableOpacity>
 
-        <View style={styles.footer}>
+      ) : null}
 
-          <Text style={styles.time}>
-            {getTime()}
-          </Text>
+      <View style={styles.footer}>
 
-          {mine ? (
+        <Text style={styles.time}>
+          {formatTime()}
+        </Text>
 
-            <Text
-              style={[
-                styles.status,
-                message.status === "read"
-                  ? styles.read
-                  : null
-              ]}
-            >
-              {getStatus()}
-            </Text>
-
-          ) : null}
-
-        </View>
+        <Text style={styles.tick}>
+          {message.status==="read"
+            ? "✓✓"
+            : message.status==="delivered"
+            ? "✓✓"
+            : "✓"}
+        </Text>
 
       </View>
 
@@ -123,48 +109,42 @@ export default function MessageBubble({ message }) {
 const styles = StyleSheet.create({
 
   container:{
-    marginVertical:4,
-    paddingHorizontal:10
-  },
-
-  left:{
-    alignItems:"flex-start"
-  },
-
-  right:{
-    alignItems:"flex-end"
-  },
-
-  bubble:{
     maxWidth:"80%",
-    borderRadius:12,
-    padding:10
+    margin:8,
+    padding:10,
+    borderRadius:12
   },
 
-  myBubble:{
+  mine:{
+    alignSelf:"flex-end",
     backgroundColor:"#DCF8C6"
   },
 
-  otherBubble:{
+  other:{
+    alignSelf:"flex-start",
     backgroundColor:"#FFFFFF"
+  },
+
+  text:{
+    fontSize:16
   },
 
   image:{
     width:220,
     height:220,
     borderRadius:10,
-    marginBottom:8
+    marginTop:6
   },
 
-  message:{
-    fontSize:16,
-    color:"#000"
+  voice:{
+    color:"#075E54",
+    fontWeight:"bold",
+    marginTop:5
   },
 
   footer:{
     flexDirection:"row",
     justifyContent:"flex-end",
-    alignItems:"center",
     marginTop:5
   },
 
@@ -173,13 +153,10 @@ const styles = StyleSheet.create({
     color:"#666"
   },
 
-  status:{
+  tick:{
     marginLeft:5,
-    color:"#666"
-  },
-
-  read:{
-    color:"#34B7F1"
+    color:"#34B7F1",
+    fontSize:12
   }
 
 });
