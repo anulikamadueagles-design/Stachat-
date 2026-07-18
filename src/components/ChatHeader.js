@@ -6,11 +6,11 @@ import {
   StyleSheet
 } from "react-native";
 
-export default function ChatHeader({
-  user,
-  onVoiceCall,
-  onVideoCall
-}) {
+import { useNavigation } from "@react-navigation/native";
+
+export default function ChatHeader({ user }) {
+
+  const navigation = useNavigation();
 
   return (
 
@@ -43,15 +43,19 @@ export default function ChatHeader({
       <View style={styles.right}>
 
         <TouchableOpacity
-          onPress={onVoiceCall}
           style={styles.button}
+          onPress={() =>
+            navigation.navigate("VoiceCall", { user })
+          }
         >
           <Text style={styles.icon}>📞</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={onVideoCall}
           style={styles.button}
+          onPress={() =>
+            navigation.navigate("VideoCall", { user })
+          }
         >
           <Text style={styles.icon}>🎥</Text>
         </TouchableOpacity>
@@ -82,7 +86,7 @@ const styles = StyleSheet.create({
   avatar:{
     width:45,
     height:45,
-    borderRadius:22.5,
+    borderRadius:23,
     backgroundColor:"#25D366",
     justifyContent:"center",
     alignItems:"center",
@@ -115,8 +119,7 @@ const styles = StyleSheet.create({
   },
 
   icon:{
-    fontSize:24,
-    color:"#fff"
+    fontSize:24
   }
 
 });
