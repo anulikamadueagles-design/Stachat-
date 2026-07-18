@@ -16,6 +16,7 @@ import GroupChatScreen from "../screens/GroupChatScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import VoiceCallScreen from "../screens/VoiceCallScreen";
 import VideoCallScreen from "../screens/VideoCallScreen";
+import IncomingCallScreen from "../screens/IncomingCallScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -26,45 +27,14 @@ function HomeTabs() {
 
     <Tab.Navigator>
 
-      <Tab.Screen
-        name="Chats"
-        component={ChatsScreen}
-      />
-
-      <Tab.Screen
-        name="Contacts"
-        component={ContactsScreen}
-      />
-
-      <Tab.Screen
-        name="Search"
-        component={SearchScreen}
-      />
-
-      <Tab.Screen
-        name="Groups"
-        component={GroupsScreen}
-      />
-
-      <Tab.Screen
-        name="Status"
-        component={StatusScreen}
-      />
-
-      <Tab.Screen
-        name="Calls"
-        component={CallsScreen}
-      />
-
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-      />
-
-      <Tab.Screen
-        name="Settings"
-        component={SettingsScreen}
-      />
+      <Tab.Screen name="Chats" component={ChatsScreen} />
+      <Tab.Screen name="Contacts" component={ContactsScreen} />
+      <Tab.Screen name="Search" component={SearchScreen} />
+      <Tab.Screen name="Groups" component={GroupsScreen} />
+      <Tab.Screen name="Status" component={StatusScreen} />
+      <Tab.Screen name="Calls" component={CallsScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Settings" component={SettingsScreen} />
 
     </Tab.Navigator>
 
@@ -83,7 +53,7 @@ export default function AppNavigator() {
         <Stack.Screen
           name="Home"
           component={HomeTabs}
-          options={{ headerShown: false }}
+          options={{ headerShown:false }}
         />
 
         <Stack.Screen
@@ -111,6 +81,11 @@ export default function AppNavigator() {
           component={VideoCallScreen}
         />
 
+        <Stack.Screen
+          name="IncomingCall"
+          component={IncomingCallScreen}
+        />
+
       </Stack.Navigator>
 
     </NavigationContainer>
@@ -118,5 +93,3 @@ export default function AppNavigator() {
   );
 
 }
-
-
