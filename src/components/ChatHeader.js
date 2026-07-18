@@ -7,10 +7,49 @@ import {
 } from "react-native";
 
 import { useNavigation } from "@react-navigation/native";
+import { useContext } from "react";
+
+import { AuthContext } from "../context/AuthContext";
+
+import {
+  startVoiceCall,
+  startVideoCall
+} from "../services/CallService";
 
 export default function ChatHeader({ user }) {
 
   const navigation = useNavigation();
+  const { user: me } = useContext(AuthContext);
+
+  async function voiceCall() {
+
+    const callId =
+      await startVoiceCall(me, user);
+
+    navigation.navigate(
+      "VoiceCall",
+      {
+        user,
+        callId
+      }
+    );
+
+  }
+
+  async function videoCall() {
+
+    const callId =
+      await startVideoCall(me, user);
+
+    navigation.navigate(
+      "VideoCall",
+      {
+        user,
+        callId
+      }
+    );
+
+  }
 
   return (
 
@@ -33,7 +72,9 @@ export default function ChatHeader({ user }) {
           </Text>
 
           <Text style={styles.status}>
-            {user?.online ? "🟢 Online" : "⚪ Offline"}
+            {user?.online
+              ? "🟢 Online"
+              : "⚪ Offline"}
           </Text>
 
         </View>
@@ -44,18 +85,14 @@ export default function ChatHeader({ user }) {
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() =>
-            navigation.navigate("VoiceCall", { user })
-          }
+          onPress={voiceCall}
         >
           <Text style={styles.icon}>📞</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() =>
-            navigation.navigate("VideoCall", { user })
-          }
+          onPress={videoCall}
         >
           <Text style={styles.icon}>🎥</Text>
         </TouchableOpacity>
