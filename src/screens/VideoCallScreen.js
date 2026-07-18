@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,55 +11,35 @@ import { RTCView } from "react-native-webrtc";
 import {
   createPeer,
   getLocalStream,
+  createOffer,
+  setRemoteDescription,
+  addIceCandidate,
+  onIceCandidate,
+  onRemoteStream,
   closeConnection
 } from "../services/WebRTCService";
 
+import {
+  createCall,
+  sendIceCandidate,
+  listenCall,
+  listenCandidates
+} from "../services/SignalingService";
+
 export default function VideoCallScreen({
-  route,
-  navigation
+  navigation,
+  route
 }) {
 
-  const { user } = route.params;
-
-  const [seconds, setSeconds] = useState(0);
-  const [muted, setMuted] = useState(false);
-  const [cameraOn, setCameraOn] = useState(true);
-  const [frontCamera, setFrontCamera] = useState(true);
-  const [speaker, setSpeaker] = useState(true);
-  const [stream, setStream] = useState(null);
+  const [localStream, setLocalStream] = useState(null);
+  const [remoteStream, setRemoteStream] = useState(null);
+  const [status, setStatus] = useState("Connecting...");
 
   useEffect(() => {
 
-    async function startVideo() {
-
-      try {
-
-        await createPeer();
-
-        const local =
-          await getLocalStream(true);
-
-        setStream(local);
-
-      } catch (e) {
-
-        console.log(e);
-
-      }
-
-    }
-
-    startVideo();
-
-    const timer = setInterval(() => {
-
-      setSeconds(s => s + 1);
-
-    }, 1000);
+    startCall();
 
     return () => {
-
-      clearInterval(timer);
 
       closeConnection();
 
@@ -67,12 +47,57 @@ export default function VideoCallScreen({
 
   }, []);
 
-  function formatTime() {
+  async function startCall() {
 
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
+    await createPeer();
 
-    return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+    const stream =
+      await getLocalStream(true);
+
+    setLocalStream(stream);
+
+    const offer =
+      await createOffer();
+
+    const callId =
+      Date.now().toString();
+
+    await createCall(callId, offer);
+
+    onIceCandidate(async candidate => {
+
+      await sendIceCandidate(
+        callId,
+        candidate
+      );
+
+    });
+
+    onRemoteStream(stream => {
+
+      setRemoteStream(stream);
+
+      setStatus("Connected");
+
+    });
+
+    listenCall(callId, async call => {
+
+      if (call.answer) {
+
+        await setRemoteDescription(
+          call.answer
+        );
+
+      }
+
+    });
+
+    listenCandidates(callId, async candidate => {
+
+      await addIceCandidate(candidate);
+
+    });
 
   }
 
@@ -80,64 +105,29 @@ export default function VideoCallScreen({
 
     <View style={styles.container}>
 
-      <View style={styles.video}>
+      {remoteStream ? (
 
-        {stream ? (
+        <RTCView
+          streamURL={remoteStream.toURL()}
+          style={styles.remote}
+        />
 
-          <RTCView
-            streamURL={stream.toURL()}
-            style={styles.rtcView}
-          />
+      ) : (
 
-        ) : (
-
-          <Text style={styles.placeholder}>
-            Connecting Camera...
-          </Text>
-
-        )}
-
-        <Text style={styles.name}>
-          {user?.displayName || "Unknown User"}
+        <Text style={styles.wait}>
+          {status}
         </Text>
 
-        <Text style={styles.timer}>
-          {formatTime()}
-        </Text>
+      )}
 
-      </View>
+      {localStream && (
 
-      <View style={styles.controls}>
+        <RTCView
+          streamURL={localStream.toURL()}
+          style={styles.local}
+        />
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => setMuted(!muted)}
-        >
-          <Text>{muted ? "🔇" : "🎤"}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => setSpeaker(!speaker)}
-        >
-          <Text>{speaker ? "🔊" : "🔈"}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => setCameraOn(!cameraOn)}
-        >
-          <Text>{cameraOn ? "📷" : "🚫📷"}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => setFrontCamera(!frontCamera)}
-        >
-          <Text>🔄</Text>
-        </TouchableOpacity>
-
-      </View>
+      )}
 
       <TouchableOpacity
         style={styles.end}
@@ -169,53 +159,33 @@ const styles = StyleSheet.create({
     backgroundColor:"#000"
   },
 
-  video:{
-    flex:1,
-    justifyContent:"center",
-    alignItems:"center"
+  remote:{
+    flex:1
   },
 
-  rtcView:{
+  local:{
     position:"absolute",
-    width:"100%",
-    height:"100%"
+    width:120,
+    height:180,
+    right:15,
+    top:50
   },
 
-  name:{
+  wait:{
     color:"#fff",
-    fontSize:26,
-    fontWeight:"bold"
-  },
-
-  timer:{
-    color:"#ddd",
-    marginTop:8,
-    fontSize:18
-  },
-
-  placeholder:{
-    color:"#fff",
-    fontSize:22
-  },
-
-  controls:{
-    flexDirection:"row",
-    justifyContent:"space-evenly",
-    padding:20
-  },
-
-  button:{
-    backgroundColor:"#333",
-    padding:18,
-    borderRadius:30
+    textAlign:"center",
+    marginTop:100,
+    fontSize:20
   },
 
   end:{
+    position:"absolute",
+    bottom:40,
+    alignSelf:"center",
     backgroundColor:"#E53935",
-    margin:20,
-    padding:16,
-    borderRadius:30,
-    alignItems:"center"
+    paddingHorizontal:30,
+    paddingVertical:15,
+    borderRadius:30
   },
 
   endText:{
