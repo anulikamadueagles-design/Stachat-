@@ -6,6 +6,14 @@ import {
   StyleSheet
 } from "react-native";
 
+import { RTCView } from "react-native-webrtc";
+
+import {
+  createPeer,
+  getLocalStream,
+  closeConnection
+} from "../services/WebRTCService";
+
 export default function VideoCallScreen({
   route,
   navigation
@@ -18,14 +26,44 @@ export default function VideoCallScreen({
   const [cameraOn, setCameraOn] = useState(true);
   const [frontCamera, setFrontCamera] = useState(true);
   const [speaker, setSpeaker] = useState(true);
+  const [stream, setStream] = useState(null);
 
   useEffect(() => {
 
+    async function startVideo() {
+
+      try {
+
+        await createPeer();
+
+        const local =
+          await getLocalStream(true);
+
+        setStream(local);
+
+      } catch (e) {
+
+        console.log(e);
+
+      }
+
+    }
+
+    startVideo();
+
     const timer = setInterval(() => {
+
       setSeconds(s => s + 1);
+
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+
+      clearInterval(timer);
+
+      closeConnection();
+
+    };
 
   }, []);
 
@@ -44,16 +82,27 @@ export default function VideoCallScreen({
 
       <View style={styles.video}>
 
+        {stream ? (
+
+          <RTCView
+            streamURL={stream.toURL()}
+            style={styles.rtcView}
+          />
+
+        ) : (
+
+          <Text style={styles.placeholder}>
+            Connecting Camera...
+          </Text>
+
+        )}
+
         <Text style={styles.name}>
           {user?.displayName || "Unknown User"}
         </Text>
 
         <Text style={styles.timer}>
           {formatTime()}
-        </Text>
-
-        <Text style={styles.placeholder}>
-          📹 Video Preview
         </Text>
 
       </View>
@@ -92,11 +141,19 @@ export default function VideoCallScreen({
 
       <TouchableOpacity
         style={styles.end}
-        onPress={() => navigation.goBack()}
+        onPress={() => {
+
+          closeConnection();
+
+          navigation.goBack();
+
+        }}
       >
+
         <Text style={styles.endText}>
           End Call
         </Text>
+
       </TouchableOpacity>
 
     </View>
@@ -118,6 +175,12 @@ const styles = StyleSheet.create({
     alignItems:"center"
   },
 
+  rtcView:{
+    position:"absolute",
+    width:"100%",
+    height:"100%"
+  },
+
   name:{
     color:"#fff",
     fontSize:26,
@@ -131,7 +194,6 @@ const styles = StyleSheet.create({
   },
 
   placeholder:{
-    marginTop:40,
     color:"#fff",
     fontSize:22
   },
