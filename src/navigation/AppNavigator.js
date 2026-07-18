@@ -6,6 +6,7 @@ import ChatsScreen from "../screens/ChatsScreen";
 import PrivateChatScreen from "../screens/PrivateChatScreen";
 import VoiceCallScreen from "../screens/VoiceCallScreen";
 import VideoCallScreen from "../screens/VideoCallScreen";
+import IncomingCallScreen from "../screens/IncomingCallScreen";
 import StatusScreen from "../screens/StatusScreen";
 import CallsScreen from "../screens/CallsScreen";
 import SettingsScreen from "../screens/SettingsScreen";
@@ -43,6 +44,11 @@ export default function AppNavigator() {
         <Stack.Screen
           name="VideoCall"
           component={VideoCallScreen}
+        />
+
+        <Stack.Screen
+          name="IncomingCall"
+          component={IncomingCallScreen}
         />
 
         <Stack.Screen
