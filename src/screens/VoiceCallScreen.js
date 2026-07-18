@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -9,33 +10,30 @@ import {
 import {
   createPeer,
   getLocalStream,
+  createOffer,
+  setRemoteDescription,
+  onIceCandidate,
+  addIceCandidate,
   closeConnection
 } from "../services/WebRTCService";
 
-export default function VoiceCallScreen({ route, navigation }) {
+import {
+  createCall,
+  saveAnswer,
+  sendIceCandidate,
+  listenCall,
+  listenCandidates
+} from "../services/SignalingService";
 
-  const [status, setStatus] = useState("Connecting...");
+export default function VoiceCallScreen({
+  navigation
+}) {
+
+  const [status, setStatus] = useState("Calling...");
 
   useEffect(() => {
 
-    async function startCall() {
-
-      try {
-
-        await createPeer();
-        await getLocalStream(false);
-
-        setStatus("Connected");
-
-      } catch (e) {
-
-        setStatus("Connection Failed");
-
-      }
-
-    }
-
-    startCall();
+    start();
 
     return () => {
 
@@ -45,11 +43,56 @@ export default function VoiceCallScreen({ route, navigation }) {
 
   }, []);
 
-  function endCall() {
+  async function start() {
 
-    closeConnection();
+    await createPeer();
 
-    navigation.goBack();
+    await getLocalStream(false);
+
+    const offer =
+      await createOffer();
+
+    const callId =
+      Date.now().toString();
+
+    await createCall(
+      callId,
+      offer
+    );
+
+    onIceCandidate(async candidate => {
+
+      await sendIceCandidate(
+        callId,
+        candidate
+      );
+
+    });
+
+    listenCall(callId, async data => {
+
+      if (data.answer) {
+
+        await setRemoteDescription(
+          data.answer
+        );
+
+        setStatus("Connected");
+
+      }
+
+    });
+
+    listenCandidates(
+      callId,
+      async candidate => {
+
+        await addIceCandidate(
+          candidate
+        );
+
+      }
+    );
 
   }
 
@@ -57,8 +100,8 @@ export default function VoiceCallScreen({ route, navigation }) {
 
     <View style={styles.container}>
 
-      <Text style={styles.name}>
-        {route?.params?.user?.displayName || "Voice Call"}
+      <Text style={styles.title}>
+        Voice Call
       </Text>
 
       <Text style={styles.status}>
@@ -66,8 +109,14 @@ export default function VoiceCallScreen({ route, navigation }) {
       </Text>
 
       <TouchableOpacity
-        style={styles.endButton}
-        onPress={endCall}
+        style={styles.end}
+        onPress={() => {
+
+          closeConnection();
+
+          navigation.goBack();
+
+        }}
       >
 
         <Text style={styles.endText}>
@@ -91,23 +140,22 @@ const styles = StyleSheet.create({
     backgroundColor:"#075E54"
   },
 
-  name:{
-    fontSize:28,
+  title:{
     color:"#fff",
+    fontSize:28,
     fontWeight:"bold"
   },
 
   status:{
-    fontSize:18,
-    color:"#ddd",
-    marginTop:10
+    color:"#fff",
+    marginTop:15,
+    fontSize:18
   },
 
-  endButton:{
-    marginTop:60,
+  end:{
+    marginTop:50,
     backgroundColor:"#E53935",
-    paddingHorizontal:35,
-    paddingVertical:15,
+    padding:18,
     borderRadius:30
   },
 
