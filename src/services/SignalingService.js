@@ -1,53 +1,44 @@
 import {
   doc,
+  setDoc,
   updateDoc,
   onSnapshot,
-  arrayUnion
+  collection,
+  addDoc,
+  serverTimestamp
 } from "firebase/firestore";
 
-import { db } from "../config/firebase";
+import { db } from "./firebase";
 
-export async function sendOffer(callId, offer) {
+export async function createCall(callId, offer) {
 
-  await updateDoc(
-    doc(db, "calls", callId),
-    {
-      offer
-    }
+  await setDoc(doc(db, "calls", callId), {
+    offer,
+    status: "calling",
+    createdAt: serverTimestamp()
+  });
+
+}
+
+export async function saveAnswer(callId, answer) {
+
+  await updateDoc(doc(db, "calls", callId), {
+    answer,
+    status: "connected"
+  });
+
+}
+
+export async function sendIceCandidate(callId, candidate) {
+
+  await addDoc(
+    collection(db, "calls", callId, "candidates"),
+    candidate
   );
 
 }
 
-export async function sendAnswer(callId, answer) {
-
-  await updateDoc(
-    doc(db, "calls", callId),
-    {
-      answer
-    }
-  );
-
-}
-
-export async function sendIceCandidate(
-  callId,
-  candidate,
-  type
-) {
-
-  await updateDoc(
-    doc(db, "calls", callId),
-    {
-      [type]: arrayUnion(candidate)
-    }
-  );
-
-}
-
-export function subscribeCall(
-  callId,
-  callback
-) {
+export function listenCall(callId, callback) {
 
   return onSnapshot(
     doc(db, "calls", callId),
@@ -58,6 +49,27 @@ export function subscribeCall(
         callback(snapshot.data());
 
       }
+
+    }
+  );
+
+}
+
+export function listenCandidates(callId, callback) {
+
+  return onSnapshot(
+    collection(db, "calls", callId, "candidates"),
+    snapshot => {
+
+      snapshot.docChanges().forEach(change => {
+
+        if (change.type === "added") {
+
+          callback(change.doc.data());
+
+        }
+
+      });
 
     }
   );
