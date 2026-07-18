@@ -15,6 +15,7 @@ import {
 
 import { AuthContext } from "../context/AuthContext";
 
+import ChatHeader from "../components/ChatHeader";
 import MessageBubble from "../components/MessageBubble";
 
 import {
@@ -36,7 +37,6 @@ import {
 export default function PrivateChatScreen({ route }) {
 
   const { user } = useContext(AuthContext);
-
   const receiver = route.params.user;
 
   const [messages, setMessages] = useState([]);
@@ -45,16 +45,17 @@ export default function PrivateChatScreen({ route }) {
 
   useEffect(() => {
 
-    const unsubscribe =
-      subscribePrivateMessages(
-        user.uid,
-        receiver.uid,
-        setMessages
-      );
+    if (!user || !receiver) return;
+
+    const unsubscribe = subscribePrivateMessages(
+      user.uid,
+      receiver.uid,
+      setMessages
+    );
 
     return unsubscribe;
 
-  }, []);
+  }, [user, receiver]);
 
   async function sendText() {
 
@@ -63,9 +64,7 @@ export default function PrivateChatScreen({ route }) {
     await sendPrivateMessage(
       user,
       receiver,
-      {
-        text
-      }
+      { text }
     );
 
     setText("");
@@ -80,23 +79,17 @@ export default function PrivateChatScreen({ route }) {
 
   async function sendPhoto() {
 
-    const image =
-      await pickImage();
+    const image = await pickImage();
 
     if (!image) return;
 
     const imageUrl =
-      await uploadImage(
-        image,
-        user.uid
-      );
+      await uploadImage(image, user.uid);
 
     await sendPrivateMessage(
       user,
       receiver,
-      {
-        imageUrl
-      }
+      { imageUrl }
     );
 
   }
@@ -112,9 +105,7 @@ export default function PrivateChatScreen({ route }) {
     } else {
 
       const voiceUrl =
-        await stopRecording(
-          user.uid
-        );
+        await stopRecording(user.uid);
 
       setRecording(false);
 
@@ -123,9 +114,7 @@ export default function PrivateChatScreen({ route }) {
       await sendPrivateMessage(
         user,
         receiver,
-        {
-          voiceUrl
-        }
+        { voiceUrl }
       );
 
     }
@@ -140,8 +129,7 @@ export default function PrivateChatScreen({ route }) {
       user.uid,
       receiver.uid,
       value.length > 0,
-      user.displayName ||
-      user.email
+      user.displayName || user.email
     );
 
   }
@@ -150,30 +138,31 @@ export default function PrivateChatScreen({ route }) {
 
     <View style={styles.container}>
 
+      <ChatHeader user={receiver} />
+
       <FlatList
         data={messages}
-        keyExtractor={item=>item.id}
-        renderItem={({item})=>
-
-          <MessageBubble
-            message={item}
-          />
-
-        }
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <MessageBubble message={item} />
+        )}
+        contentContainerStyle={{
+          paddingVertical:10
+        }}
       />
 
       <View style={styles.bottom}>
 
         <TouchableOpacity
-          onPress={sendPhoto}
           style={styles.icon}
+          onPress={sendPhoto}
         >
           <Text>📷</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={toggleRecording}
           style={styles.icon}
+          onPress={toggleRecording}
         >
           <Text>
             {recording ? "⏹️" : "🎤"}
@@ -188,8 +177,8 @@ export default function PrivateChatScreen({ route }) {
         />
 
         <TouchableOpacity
-          onPress={sendText}
           style={styles.send}
+          onPress={sendText}
         >
           <Text style={styles.sendText}>
             Send
