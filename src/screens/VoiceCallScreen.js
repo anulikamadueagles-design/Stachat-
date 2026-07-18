@@ -1,4 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, {
+  useEffect,
+  useState
+} from "react";
+
 import {
   View,
   Text,
@@ -6,26 +10,48 @@ import {
   StyleSheet
 } from "react-native";
 
-export default function VoiceCallScreen({ route, navigation }) {
+import {
+  endCall
+} from "../services/CallService";
 
-  const { user } = route.params;
+export default function VoiceCallScreen({
+  route,
+  navigation
+}) {
+
+  const { user, callId } = route.params;
+
   const [seconds, setSeconds] = useState(0);
-  const [muted, setMuted] = useState(false);
+  const [mute, setMute] = useState(false);
   const [speaker, setSpeaker] = useState(false);
 
   useEffect(() => {
+
     const timer = setInterval(() => {
-      setSeconds(s => s + 1);
+      setSeconds(value => value + 1);
     }, 1000);
 
     return () => clearInterval(timer);
+
   }, []);
 
-  function formatTime() {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
+  async function hangUp() {
 
-    return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+    await endCall(callId);
+
+    navigation.goBack();
+
+  }
+
+  function formatTime() {
+
+    const min = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+
+    return `${min}:${sec
+      .toString()
+      .padStart(2,"0")}`;
+
   }
 
   return (
@@ -33,7 +59,7 @@ export default function VoiceCallScreen({ route, navigation }) {
     <View style={styles.container}>
 
       <Text style={styles.name}>
-        {user?.displayName || "Unknown"}
+        {user.displayName || user.email}
       </Text>
 
       <Text style={styles.status}>
@@ -44,32 +70,40 @@ export default function VoiceCallScreen({ route, navigation }) {
         {formatTime()}
       </Text>
 
-      <View style={styles.controls}>
+      <View style={styles.buttons}>
 
         <TouchableOpacity
-          style={styles.button}
-          onPress={() => setMuted(!muted)}
+          style={styles.control}
+          onPress={() =>
+            setMute(!mute)
+          }
         >
-          <Text>{muted ? "🎤 Off" : "🎤 On"}</Text>
+          <Text>
+            {mute ? "🎤 Off" : "🎤 On"}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.button}
-          onPress={() => setSpeaker(!speaker)}
+          style={styles.control}
+          onPress={() =>
+            setSpeaker(!speaker)
+          }
         >
-          <Text>{speaker ? "🔊 On" : "🔈 Off"}</Text>
+          <Text>
+            {speaker ? "🔊 On" : "🔈 Off"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.end}
+          onPress={hangUp}
+        >
+          <Text style={styles.endText}>
+            End
+          </Text>
         </TouchableOpacity>
 
       </View>
-
-      <TouchableOpacity
-        style={styles.end}
-        onPress={() => navigation.goBack()}
-      >
-        <Text style={styles.endText}>
-          End Call
-        </Text>
-      </TouchableOpacity>
 
     </View>
 
@@ -83,34 +117,33 @@ const styles = StyleSheet.create({
     flex:1,
     backgroundColor:"#075E54",
     justifyContent:"center",
-    alignItems:"center",
-    padding:20
+    alignItems:"center"
   },
 
   name:{
-    fontSize:28,
     color:"#fff",
+    fontSize:28,
     fontWeight:"bold"
   },
 
   status:{
-    fontSize:18,
     color:"#ddd",
-    marginTop:10
+    marginTop:10,
+    fontSize:18
   },
 
   timer:{
-    fontSize:32,
     color:"#fff",
-    marginVertical:30
+    marginTop:20,
+    fontSize:20
   },
 
-  controls:{
+  buttons:{
     flexDirection:"row",
-    marginBottom:40
+    marginTop:60
   },
 
-  button:{
+  control:{
     backgroundColor:"#fff",
     padding:15,
     borderRadius:30,
@@ -119,15 +152,14 @@ const styles = StyleSheet.create({
 
   end:{
     backgroundColor:"#E53935",
-    paddingHorizontal:30,
-    paddingVertical:15,
-    borderRadius:30
+    padding:15,
+    borderRadius:30,
+    marginHorizontal:10
   },
 
   endText:{
     color:"#fff",
-    fontWeight:"bold",
-    fontSize:16
+    fontWeight:"bold"
   }
 
 });
