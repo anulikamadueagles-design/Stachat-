@@ -4,11 +4,11 @@ import {
   Text,
   Image,
   TouchableOpacity,
-  Linking,
   StyleSheet
 } from "react-native";
 
 import { Audio } from "expo-av";
+import { downloadFile } from "../services/DownloadService";
 
 export default function MessageBubble({ message }) {
 
@@ -29,8 +29,9 @@ export default function MessageBubble({ message }) {
 
     if (!message.fileUrl) return;
 
-    await Linking.openURL(
-      message.fileUrl
+    await downloadFile(
+      message.fileUrl,
+      message.fileName
     );
 
   }
@@ -62,22 +63,16 @@ export default function MessageBubble({ message }) {
     if (name.endsWith(".pdf"))
       return "📕";
 
-    if (
-      name.endsWith(".doc") ||
-      name.endsWith(".docx")
-    )
+    if (name.endsWith(".doc") ||
+        name.endsWith(".docx"))
       return "📘";
 
-    if (
-      name.endsWith(".xls") ||
-      name.endsWith(".xlsx")
-    )
+    if (name.endsWith(".xls") ||
+        name.endsWith(".xlsx"))
       return "📗";
 
-    if (
-      name.endsWith(".zip") ||
-      name.endsWith(".rar")
-    )
+    if (name.endsWith(".zip") ||
+        name.endsWith(".rar"))
       return "🗜️";
 
     return "📄";
@@ -106,9 +101,7 @@ export default function MessageBubble({ message }) {
       {message.imageUrl ? (
 
         <Image
-          source={{
-            uri: message.imageUrl
-          }}
+          source={{ uri: message.imageUrl }}
           style={styles.image}
         />
 
@@ -142,14 +135,14 @@ export default function MessageBubble({ message }) {
           <View style={{flex:1}}>
 
             <Text
-              numberOfLines={1}
               style={styles.fileName}
+              numberOfLines={1}
             >
               {message.fileName}
             </Text>
 
             <Text style={styles.download}>
-              Tap to Open / Download
+              Open / Download
             </Text>
 
           </View>
