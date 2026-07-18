@@ -1,6 +1,8 @@
 import {
   RTCPeerConnection,
-  mediaDevices
+  mediaDevices,
+  RTCSessionDescription,
+  RTCIceCandidate
 } from "react-native-webrtc";
 
 const configuration = {
@@ -26,18 +28,18 @@ export async function createPeer() {
 
 }
 
-export async function getLocalStream(video=false) {
+export async function getLocalStream(video = false) {
 
   localStream =
     await mediaDevices.getUserMedia({
 
-      audio:true,
+      audio: true,
 
-      video:video
+      video: video
         ? {
-            facingMode:"user",
-            width:640,
-            height:480
+            facingMode: "user",
+            width: 640,
+            height: 480
           }
         : false
 
@@ -45,7 +47,7 @@ export async function getLocalStream(video=false) {
 
   localStream
     .getTracks()
-    .forEach(track=>{
+    .forEach(track => {
 
       peerConnection.addTrack(
         track,
@@ -84,20 +86,28 @@ export async function createAnswer() {
 
 }
 
-export async function setRemoteDescription(desc){
+export async function setRemoteDescription(desc) {
 
   await peerConnection.setRemoteDescription(
-    desc
+    new RTCSessionDescription(desc)
   );
 
 }
 
-export function onIceCandidate(callback){
+export async function addIceCandidate(candidate) {
+
+  await peerConnection.addIceCandidate(
+    new RTCIceCandidate(candidate)
+  );
+
+}
+
+export function onIceCandidate(callback) {
 
   peerConnection.onicecandidate =
-    event=>{
+    event => {
 
-      if(event.candidate){
+      if (event.candidate) {
 
         callback(event.candidate);
 
@@ -107,10 +117,10 @@ export function onIceCandidate(callback){
 
 }
 
-export function onRemoteStream(callback){
+export function onRemoteStream(callback) {
 
   peerConnection.ontrack =
-    event=>{
+    event => {
 
       callback(event.streams[0]);
 
@@ -118,17 +128,29 @@ export function onRemoteStream(callback){
 
 }
 
-export function closeConnection(){
+export function getPeerConnection() {
 
-  if(localStream){
+  return peerConnection;
+
+}
+
+export function getCurrentStream() {
+
+  return localStream;
+
+}
+
+export function closeConnection() {
+
+  if (localStream) {
 
     localStream
       .getTracks()
-      .forEach(track=>track.stop());
+      .forEach(track => track.stop());
 
   }
 
-  if(peerConnection){
+  if (peerConnection) {
 
     peerConnection.close();
 
