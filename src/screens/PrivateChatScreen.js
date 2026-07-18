@@ -1,223 +1,50 @@
-import React, {
-  useContext,
-  useEffect,
-  useState
-} from "react";
-
+import React from "react";
 import {
   View,
-  FlatList,
-  TextInput,
   TouchableOpacity,
-  Text,
   StyleSheet
 } from "react-native";
 
-import { AuthContext } from "../context/AuthContext";
-
 import ChatHeader from "../components/ChatHeader";
-import MessageBubble from "../components/MessageBubble";
+import MessageList from "../components/MessageList";
+import MessageInput from "../components/MessageInput";
 
-import {
-  sendPrivateMessage,
-  subscribePrivateMessages,
-  updateTyping
-} from "../services/ChatService";
+export default function PrivateChatScreen({
+  navigation,
+  route
+}) {
 
-import {
-  pickImage,
-  uploadImage
-} from "../services/MediaService";
-
-import {
-  pickDocument,
-  uploadDocument
-} from "../services/FileService";
-
-import {
-  startRecording,
-  stopRecording
-} from "../services/VoiceService";
-
-export default function PrivateChatScreen({ route }) {
-
-  const { user } = useContext(AuthContext);
-  const receiver = route.params.user;
-
-  const [messages, setMessages] = useState([]);
-  const [text, setText] = useState("");
-  const [recording, setRecording] = useState(false);
-
-  useEffect(() => {
-
-    if (!user || !receiver) return;
-
-    const unsubscribe = subscribePrivateMessages(
-      user.uid,
-      receiver.uid,
-      setMessages
-    );
-
-    return unsubscribe;
-
-  }, [user, receiver]);
-
-  async function sendText() {
-
-    if (!text.trim()) return;
-
-    await sendPrivateMessage(
-      user,
-      receiver,
-      { text }
-    );
-
-    setText("");
-
-    await updateTyping(
-      user.uid,
-      receiver.uid,
-      false
-    );
-
-  }
-
-  async function sendPhoto() {
-
-    const image = await pickImage();
-
-    if (!image) return;
-
-    const imageUrl =
-      await uploadImage(image, user.uid);
-
-    await sendPrivateMessage(
-      user,
-      receiver,
-      { imageUrl }
-    );
-
-  }
-
-  async function sendDocument() {
-
-    const file = await pickDocument();
-
-    if (!file) return;
-
-    const fileUrl =
-      await uploadDocument(file, user.uid);
-
-    await sendPrivateMessage(
-      user,
-      receiver,
-      {
-        fileName: file.name,
-        fileUrl
-      }
-    );
-
-  }
-
-  async function toggleRecording() {
-
-    if (!recording) {
-
-      setRecording(true);
-
-      await startRecording();
-
-    } else {
-
-      const voiceUrl =
-        await stopRecording(user.uid);
-
-      setRecording(false);
-
-      if (!voiceUrl) return;
-
-      await sendPrivateMessage(
-        user,
-        receiver,
-        { voiceUrl }
-      );
-
-    }
-
-  }
-
-  async function typing(value) {
-
-    setText(value);
-
-    await updateTyping(
-      user.uid,
-      receiver.uid,
-      value.length > 0,
-      user.displayName || user.email
-    );
-
-  }
+  const { user } = route.params;
 
   return (
 
     <View style={styles.container}>
 
-      <ChatHeader user={receiver} />
+      <ChatHeader user={user} />
 
-      <FlatList
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <MessageBubble message={item} />
-        )}
-        contentContainerStyle={{
-          paddingVertical:10
-        }}
+      <MessageList user={user} />
+
+      <MessageInput user={user} />
+
+      <TouchableOpacity
+        style={styles.voice}
+        onPress={() =>
+          navigation.navigate(
+            "VoiceCall",
+            { user }
+          )
+        }
       />
 
-      <View style={styles.bottom}>
-
-        <TouchableOpacity
-          style={styles.icon}
-          onPress={sendDocument}
-        >
-          <Text>📎</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.icon}
-          onPress={sendPhoto}
-        >
-          <Text>📷</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.icon}
-          onPress={toggleRecording}
-        >
-          <Text>
-            {recording ? "⏹️" : "🎤"}
-          </Text>
-        </TouchableOpacity>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Message..."
-          value={text}
-          onChangeText={typing}
-        />
-
-        <TouchableOpacity
-          style={styles.send}
-          onPress={sendText}
-        >
-          <Text style={styles.sendText}>
-            Send
-          </Text>
-        </TouchableOpacity>
-
-      </View>
+      <TouchableOpacity
+        style={styles.video}
+        onPress={() =>
+          navigation.navigate(
+            "VideoCall",
+            { user }
+          )
+        }
+      />
 
     </View>
 
@@ -232,36 +59,20 @@ const styles = StyleSheet.create({
     backgroundColor:"#ECE5DD"
   },
 
-  bottom:{
-    flexDirection:"row",
-    alignItems:"center",
-    padding:10,
-    backgroundColor:"#fff"
+  voice:{
+    position:"absolute",
+    top:15,
+    right:70,
+    width:40,
+    height:40
   },
 
-  icon:{
-    padding:8
-  },
-
-  input:{
-    flex:1,
-    backgroundColor:"#eee",
-    borderRadius:20,
-    paddingHorizontal:15,
-    height:45
-  },
-
-  send:{
-    marginLeft:10,
-    backgroundColor:"#075E54",
-    paddingHorizontal:18,
-    paddingVertical:10,
-    borderRadius:20
-  },
-
-  sendText:{
-    color:"#fff",
-    fontWeight:"bold"
+  video:{
+    position:"absolute",
+    top:15,
+    right:15,
+    width:40,
+    height:40
   }
 
 });
