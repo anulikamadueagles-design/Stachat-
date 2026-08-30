@@ -5,42 +5,44 @@ Notifications.setNotificationHandler({
     shouldShowBanner: true,
     shouldShowList: true,
     shouldPlaySound: true,
-    shouldSetBadge: false
-  })
+    shouldSetBadge: true,
+  }),
 });
 
 export async function requestNotificationPermission() {
-
   const { status } =
     await Notifications.requestPermissionsAsync();
 
   return status === "granted";
-
 }
 
 export async function getPushToken() {
-
   const token =
     await Notifications.getExpoPushTokenAsync();
 
   return token.data;
-
 }
 
-export async function showLocalNotification(
-  title,
-  body
-) {
-
+export async function showLocalNotification(title, body, data = {}) {
   await Notifications.scheduleNotificationAsync({
-
     content: {
       title,
-      body
+      body,
+      data,
+      sound: "default",
     },
-
-    trigger: null
-
+    trigger: null,
   });
+}
 
+export async function cancelAllNotifications() {
+  await Notifications.cancelAllScheduledNotificationsAsync();
+}
+
+export async function setBadgeCount(count) {
+  await Notifications.setBadgeCountAsync(count);
+}
+
+export async function clearBadge() {
+  await Notifications.setBadgeCountAsync(0);
 }

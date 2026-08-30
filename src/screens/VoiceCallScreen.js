@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,94 +6,92 @@ import {
   StyleSheet
 } from "react-native";
 
-import {
-  createPeer,
-  getLocalStream,
-  createOffer,
-  setRemoteDescription,
-  onIceCandidate,
-  addIceCandidate,
-  closeConnection
-} from "../services/WebRTCService";
+import { AuthContext } from "../context/AuthContext";
 
 import {
-  createCall,
-  saveAnswer,
-  sendIceCandidate,
-  listenCall,
-  listenCandidates
-} from "../services/SignalingService";
+  startCall as startWebRTCCall,
+  answerIncomingCall,
+  listenForRemote,
+  endCurrentCall
+} from "../services/CallManager";
+
+import {
+  startCall as createCallDoc,
+  answerCall as markCallAnswered,
+  endCall as markCallEnded,
+  listenCall
+} from "../services/CallService";
 
 export default function VoiceCallScreen({
-  navigation
+  navigation,
+  route
 }) {
 
-  const [status, setStatus] = useState("Calling...");
+  const { user: currentUser } = useContext(AuthContext);
+  const { user, incomingCall } = route.params || {};
+
+  const [status, setStatus] = useState(
+    incomingCall ? "Connecting..." : "Calling..."
+  );
+
+  const callIdRef = useRef(
+    incomingCall?.id || `${Date.now()}_${currentUser.uid}`
+  );
+  const endedRef = useRef(false);
 
   useEffect(() => {
 
-    start();
+    listenForRemote(() => {
+      setStatus("Connected");
+    });
+
+    if (incomingCall) {
+      answerAsReceiver();
+    } else {
+      startAsCaller();
+    }
+
+    const unsubscribe = listenCall(callIdRef.current, call => {
+
+      if (call.status === "declined" || call.status === "ended") {
+        if (!endedRef.current) {
+          endedRef.current = true;
+          endCurrentCall();
+          navigation.goBack();
+        }
+      }
+
+    });
 
     return () => {
-
-      closeConnection();
-
+      unsubscribe?.();
+      endCurrentCall();
     };
 
   }, []);
 
-  async function start() {
-
-    await createPeer();
-
-    await getLocalStream(false);
-
-    const offer =
-      await createOffer();
-
-    const callId =
-      Date.now().toString();
-
-    await createCall(
-      callId,
-      offer
-    );
-
-    onIceCandidate(async candidate => {
-
-      await sendIceCandidate(
-        callId,
-        candidate
-      );
-
-    });
-
-    listenCall(callId, async data => {
-
-      if (data.answer) {
-
-        await setRemoteDescription(
-          data.answer
-        );
-
-        setStatus("Connected");
-
-      }
-
-    });
-
-    listenCandidates(
-      callId,
-      async candidate => {
-
-        await addIceCandidate(
-          candidate
-        );
-
-      }
-    );
-
+  async function startAsCaller() {
+    await createCallDoc(callIdRef.current, currentUser, user, "voice");
+    await startWebRTCCall(callIdRef.current, false);
   }
+
+  async function answerAsReceiver() {
+    await markCallAnswered(callIdRef.current);
+    await answerIncomingCall(callIdRef.current, false);
+    setStatus("Connected");
+  }
+
+  function handleEndCall() {
+    endedRef.current = true;
+    markCallEnded(callIdRef.current);
+    endCurrentCall();
+    navigation.goBack();
+  }
+
+  const callerLabel =
+    user?.displayName ||
+    incomingCall?.callerName ||
+    "Unknown";
 
   return (
 
@@ -104,19 +101,17 @@ export default function VoiceCallScreen({
         Voice Call
       </Text>
 
+      <Text style={styles.name}>
+        {callerLabel}
+      </Text>
+
       <Text style={styles.status}>
         {status}
       </Text>
 
       <TouchableOpacity
         style={styles.end}
-        onPress={() => {
-
-          closeConnection();
-
-          navigation.goBack();
-
-        }}
+        onPress={handleEndCall}
       >
 
         <Text style={styles.endText}>
@@ -137,17 +132,24 @@ const styles = StyleSheet.create({
     flex:1,
     justifyContent:"center",
     alignItems:"center",
-    backgroundColor:"#075E54"
+    backgroundColor:"#0D1117"
   },
 
   title:{
-    color:"#fff",
+    color:"#E6F7F3",
+    fontSize:20,
+    opacity:0.8
+  },
+
+  name:{
+    color:"#E6F7F3",
     fontSize:28,
-    fontWeight:"bold"
+    fontWeight:"bold",
+    marginTop:10
   },
 
   status:{
-    color:"#fff",
+    color:"#E6F7F3",
     marginTop:15,
     fontSize:18
   },
@@ -160,7 +162,7 @@ const styles = StyleSheet.create({
   },
 
   endText:{
-    color:"#fff",
+    color:"#E6F7F3",
     fontSize:18,
     fontWeight:"bold"
   }

@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "STAChat",
+    "slug": "frontend",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.stachatofficial2026.frontend"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#075E54"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.stachatofficial2026.frontend"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+   
+    "plugins": [
+      "expo-build-properties",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#075E54",
+          "imageWidth": 220
+        }
+      ]
+    ]
+  }
+}

@@ -57,6 +57,7 @@ export default function RegisterScreen({ navigation }) {
       </Text>
 
       <TextInput
+        placeholderTextColor="#9BA3AE"
         style={styles.input}
         placeholder="Full Name"
         value={name}
@@ -64,6 +65,7 @@ export default function RegisterScreen({ navigation }) {
       />
 
       <TextInput
+        placeholderTextColor="#9BA3AE"
         style={styles.input}
         placeholder="Email"
         keyboardType="email-address"
@@ -73,6 +75,7 @@ export default function RegisterScreen({ navigation }) {
       />
 
       <TextInput
+        placeholderTextColor="#9BA3AE"
         style={styles.input}
         placeholder="Password"
         secureTextEntry
@@ -118,38 +121,40 @@ const styles = StyleSheet.create({
     flex:1,
     justifyContent:"center",
     padding:25,
-    backgroundColor:"#ECE5DD"
+    backgroundColor:"#0D1117"
   },
 
   title:{
     fontSize:36,
     fontWeight:"bold",
-    color:"#075E54",
+    color:"#00BFA5",
     textAlign:"center"
   },
 
   subtitle:{
+    color: "#E6F7F3",
     textAlign:"center",
     fontSize:20,
     marginBottom:30
   },
 
   input:{
-    backgroundColor:"#fff",
+    color: "#E6F7F3",
+    backgroundColor:"#12181C",
     padding:15,
     borderRadius:10,
     marginBottom:15
   },
 
   button:{
-    backgroundColor:"#128C7E",
+    backgroundColor:"#00BFA5",
     padding:15,
     borderRadius:10,
     alignItems:"center"
   },
 
   buttonText:{
-    color:"#fff",
+    color:"#E6F7F3",
     fontWeight:"bold",
     fontSize:16
   },
@@ -157,7 +162,7 @@ const styles = StyleSheet.create({
   link:{
     textAlign:"center",
     marginTop:20,
-    color:"#075E54",
+    color:"#00BFA5",
     fontWeight:"600"
   }
 

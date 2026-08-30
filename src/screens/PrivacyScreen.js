@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
 
   container:{
     flex:1,
-    backgroundColor:"#ECE5DD",
+    backgroundColor:"#0D1117",
     padding:20
   },
 
@@ -60,13 +60,14 @@ const styles = StyleSheet.create({
     flexDirection:"row",
     justifyContent:"space-between",
     alignItems:"center",
-    backgroundColor:"#fff",
+    backgroundColor:"#12181C",
     padding:15,
     marginBottom:15,
     borderRadius:10
   },
 
   text:{
+    color: "#E6F7F3",
     fontSize:16
   }
 

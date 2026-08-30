@@ -1,0 +1,96 @@
+import React, { useContext, useEffect } from "react";
+import {
+  NavigationContainer,
+  createNavigationContainerRef
+} from "@react-navigation/native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
+
+import AppNavigator from "./src/navigation/AppNavigator";
+import { AuthProvider, AuthContext } from "./src/context/AuthContext";
+import useOnlineStatus from "./src/hooks/useOnlineStatus";
+import { listenIncomingCalls } from "./src/services/CallNotificationService";
+import { loadOrCreateKeyPair } from "./src/services/EncryptionService";
+import InterstitialAd from "./src/components/InterstitialAd";
+import AnimatedSplashScreen from "./src/components/AnimatedSplashScreen";
+
+export const navigationRef = createNavigationContainerRef();
+
+function PresenceTracker() {
+  // Keeps the current user's "online" / "lastSeen" fields in sync
+  // with app foreground/background state. Renders nothing.
+  useOnlineStatus();
+  return null;
+}
+
+function EncryptionProvisioner() {
+  // Every user needs an encryption keypair before they can send/read
+  // encrypted messages. This generates one on first run (existing
+  // accounts get outfitted transparently the next time they open the
+  // app) and otherwise just loads the existing one from AsyncStorage.
+  const { user } = useContext(AuthContext);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    loadOrCreateKeyPair(user.uid).catch((error) => {
+      console.log("Failed to set up encryption keys:", error);
+    });
+  }, [user?.uid]);
+
+  return null;
+}
+
+function IncomingCallListener() {
+  // Watches for ringing calls addressed to this user for as long as
+  // they're logged in, anywhere in the app, and pops the Incoming
+  // Call screen. Without this, a receiver had no way to ever find
+  // out someone was calling them.
+  const { user } = useContext(AuthContext);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = listenIncomingCalls(user.uid, (call) => {
+      if (navigationRef.isReady()) {
+        navigationRef.navigate("IncomingCall", { call });
+      }
+    });
+
+    return unsubscribe;
+  }, [user?.uid]);
+
+  return null;
+}
+
+function LoggedInAds() {
+  // Full-screen sponsored placement — only makes sense once someone is
+  // actually using the app, and only once per session (see
+  // InterstitialAd.js).
+  const { user } = useContext(AuthContext);
+  if (!user) return null;
+  return <InterstitialAd />;
+}
+
+export default function App() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          {/* Dark theme throughout, so status bar icons need to be
+              light-colored to stay visible — nothing set this before. */}
+          <StatusBar style="light" />
+          <AnimatedSplashScreen>
+            <PresenceTracker />
+            <EncryptionProvisioner />
+            <IncomingCallListener />
+            <LoggedInAds />
+            <NavigationContainer ref={navigationRef}>
+              <AppNavigator />
+            </NavigationContainer>
+          </AnimatedSplashScreen>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
+  );
+}

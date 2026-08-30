@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import {
+  KeyboardAvoidingView,
+  Platform,
   View,
-  TouchableOpacity,
   StyleSheet
 } from "react-native";
 
@@ -10,43 +11,37 @@ import MessageList from "../components/MessageList";
 import MessageInput from "../components/MessageInput";
 
 export default function PrivateChatScreen({
-  navigation,
   route
 }) {
 
   const { user } = route.params;
+  const [replyingTo, setReplyingTo] = useState(null);
 
+  // Voice/video call buttons already live in ChatHeader and navigate
+  // to VoiceCall/VideoCall with this same `user` — no need to duplicate
+  // them here.
   return (
 
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+    >
 
       <ChatHeader user={user} />
 
-      <MessageList user={user} />
+      <View style={styles.messages}>
+        <MessageList user={user} onReply={setReplyingTo} />
+      </View>
 
-      <MessageInput user={user} />
-
-      <TouchableOpacity
-        style={styles.voice}
-        onPress={() =>
-          navigation.navigate(
-            "VoiceCall",
-            { user }
-          )
-        }
+      <MessageInput
+        user={user}
+        replyingTo={replyingTo}
+        onCancelReply={() => setReplyingTo(null)}
+        onSent={() => setReplyingTo(null)}
       />
 
-      <TouchableOpacity
-        style={styles.video}
-        onPress={() =>
-          navigation.navigate(
-            "VideoCall",
-            { user }
-          )
-        }
-      />
-
-    </View>
+    </KeyboardAvoidingView>
 
   );
 
@@ -56,23 +51,11 @@ const styles = StyleSheet.create({
 
   container:{
     flex:1,
-    backgroundColor:"#ECE5DD"
+    backgroundColor:"#0D1117"
   },
 
-  voice:{
-    position:"absolute",
-    top:15,
-    right:70,
-    width:40,
-    height:40
-  },
-
-  video:{
-    position:"absolute",
-    top:15,
-    right:15,
-    width:40,
-    height:40
+  messages:{
+    flex:1
   }
 
 });

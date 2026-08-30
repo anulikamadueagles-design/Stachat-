@@ -6,6 +6,8 @@ import {
   StyleSheet
 } from "react-native";
 
+import { declineCall } from "../services/CallService";
+
 export default function IncomingCallScreen({
   route,
   navigation
@@ -15,26 +17,15 @@ export default function IncomingCallScreen({
 
   function answer() {
 
-    if (call.type === "video") {
+    const screen = call.type === "video" ? "VideoCall" : "VoiceCall";
 
-      navigation.replace(
-        "VideoCall",
-        { user: { displayName: call.callerName } }
-      );
-
-    } else {
-
-      navigation.replace(
-        "VoiceCall",
-        { user: { displayName: call.callerName } }
-      );
-
-    }
+    navigation.replace(screen, { incomingCall: call });
 
   }
 
   function reject() {
 
+    declineCall(call.id).catch(() => {});
     navigation.goBack();
 
   }
@@ -44,7 +35,7 @@ export default function IncomingCallScreen({
     <View style={styles.container}>
 
       <Text style={styles.title}>
-        Incoming {call.type} Call
+        Incoming {call.type === "video" ? "Video" : "Voice"} Call
       </Text>
 
       <Text style={styles.name}>
@@ -85,17 +76,17 @@ const styles = StyleSheet.create({
     flex:1,
     justifyContent:"center",
     alignItems:"center",
-    backgroundColor:"#075E54"
+    backgroundColor:"#0D1117"
   },
 
   title:{
-    color:"#fff",
+    color:"#E6F7F3",
     fontSize:28,
     fontWeight:"bold"
   },
 
   name:{
-    color:"#fff",
+    color:"#E6F7F3",
     fontSize:22,
     marginTop:20
   },
@@ -119,7 +110,7 @@ const styles = StyleSheet.create({
   },
 
   text:{
-    color:"#fff",
+    color:"#E6F7F3",
     fontWeight:"bold",
     fontSize:18
   }

@@ -1,53 +1,129 @@
-import React, { useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
   FlatList,
+  TouchableOpacity,
   StyleSheet
 } from "react-native";
 
-export default function CallsScreen() {
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  limit
+} from "firebase/firestore";
 
-  const [calls] = useState([
-    {
-      id: "1",
-      name: "John Doe",
-      type: "Voice",
-      status: "Completed",
-      time: "10:30 AM"
-    },
-    {
-      id: "2",
-      name: "Jane Smith",
-      type: "Video",
-      status: "Missed",
-      time: "Yesterday"
+import { db } from "../config/firebase";
+import { AuthContext } from "../context/AuthContext";
+
+export default function CallsScreen({ navigation }) {
+
+  const { user } = useContext(AuthContext);
+  const [calls, setCalls] = useState([]);
+
+  useEffect(() => {
+
+    // Sorted client-side to avoid requiring a manual Firestore composite
+    // index for array-contains + orderBy.
+    const q = query(
+      collection(db, "calls"),
+      where("members", "array-contains", user.uid),
+      limit(50)
+    );
+
+    const unsubscribe = onSnapshot(q, snapshot => {
+
+      const list = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      list.sort(
+        (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+      );
+
+      setCalls(list);
+
+    });
+
+    return unsubscribe;
+
+  }, []);
+
+  function statusLabel(call) {
+
+    if (call.status === "ringing") return "Missed";
+    if (call.status === "declined") return "Declined";
+    if (call.status === "answered" || call.status === "ended") {
+      return call.callerId === user.uid ? "Outgoing" : "Incoming";
     }
-  ]);
+    return call.status || "";
+
+  }
+
+  function formatTime(call) {
+
+    if (!call.createdAt?.seconds) return "";
+
+    const date = new Date(call.createdAt.seconds * 1000);
+
+    return date.toLocaleString([], {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+
+  }
+
+  function callBack(call) {
+
+    const otherUid =
+      call.callerId === user.uid ? call.receiverId : call.callerId;
+
+    const otherName =
+      call.callerId === user.uid ? call.receiverName : call.callerName;
+
+    const target = { uid: otherUid, displayName: otherName };
+
+    navigation.navigate(
+      call.type === "video" ? "VideoCall" : "VoiceCall",
+      { user: target }
+    );
+
+  }
 
   function renderItem({ item }) {
 
+    const otherName =
+      item.callerId === user.uid ? item.receiverName : item.callerName;
+
     return (
 
-      <View style={styles.card}>
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => callBack(item)}
+      >
 
         <View>
 
           <Text style={styles.name}>
-            {item.name}
+            {otherName}
           </Text>
 
           <Text style={styles.info}>
-            {item.type} • {item.status}
+            {item.type === "video" ? "🎥" : "📞"} {statusLabel(item)}
           </Text>
 
         </View>
 
         <Text style={styles.time}>
-          {item.time}
+          {formatTime(item)}
         </Text>
 
-      </View>
+      </TouchableOpacity>
 
     );
 
@@ -58,9 +134,18 @@ export default function CallsScreen() {
     <View style={styles.container}>
 
       <FlatList
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        initialNumToRender={12}
         data={calls}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={styles.emptyText}>No calls yet</Text>
+          </View>
+        }
       />
 
     </View>
@@ -73,31 +158,43 @@ const styles = StyleSheet.create({
 
   container:{
     flex:1,
-    backgroundColor:"#ECE5DD"
+    backgroundColor:"#0D1117"
   },
 
   card:{
     flexDirection:"row",
     justifyContent:"space-between",
     alignItems:"center",
-    backgroundColor:"#fff",
+    backgroundColor:"#12181C",
     margin:10,
     padding:15,
     borderRadius:10
   },
 
   name:{
+    color: "#E6F7F3",
     fontWeight:"bold",
     fontSize:16
   },
 
   info:{
-    color:"#666",
+    color:"#9BA3AE",
     marginTop:4
   },
 
   time:{
-    color:"#888"
+    color:"#9BA3AE",
+    fontSize:12
+  },
+
+  empty:{
+    alignItems:"center",
+    marginTop:60
+  },
+
+  emptyText:{
+    fontSize:16,
+    color:"#9BA3AE"
   }
 
 });

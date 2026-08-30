@@ -4,8 +4,8 @@ import { AppState } from "react-native";
 import { AuthContext } from "../context/AuthContext";
 
 import {
-  setOnline,
-  setOffline
+  goOnline as setOnline,
+  goOffline as setOffline
 } from "../status/OnlineStatus";
 
 export default function useOnlineStatus() {
@@ -16,7 +16,7 @@ export default function useOnlineStatus() {
 
     if (!user) return;
 
-    setOnline(user);
+    setOnline(user.uid);
 
     const subscription =
       AppState.addEventListener(
@@ -24,9 +24,9 @@ export default function useOnlineStatus() {
         (state) => {
 
           if (state === "active") {
-            setOnline(user);
+            setOnline(user.uid);
           } else {
-            setOffline(user);
+            setOffline(user.uid);
           }
 
         }
@@ -36,7 +36,7 @@ export default function useOnlineStatus() {
 
       subscription.remove();
 
-      setOffline(user);
+      setOffline(user.uid);
 
     };
 

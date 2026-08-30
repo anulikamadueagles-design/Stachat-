@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,98 +8,107 @@ import {
 
 import { RTCView } from "react-native-webrtc";
 
-import {
-  createPeer,
-  getLocalStream,
-  createOffer,
-  setRemoteDescription,
-  addIceCandidate,
-  onIceCandidate,
-  onRemoteStream,
-  closeConnection
-} from "../services/WebRTCService";
+import { AuthContext } from "../context/AuthContext";
 
 import {
-  createCall,
-  sendIceCandidate,
-  listenCall,
-  listenCandidates
-} from "../services/SignalingService";
+  startCall as startWebRTCCall,
+  answerIncomingCall,
+  listenForRemote,
+  endCurrentCall
+} from "../services/CallManager";
+
+import {
+  startCall as createCallDoc,
+  answerCall as markCallAnswered,
+  endCall as markCallEnded,
+  listenCall
+} from "../services/CallService";
 
 export default function VideoCallScreen({
   navigation,
   route
 }) {
 
+  const { user: currentUser } = useContext(AuthContext);
+  const { user, incomingCall } = route.params || {};
+
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
-  const [status, setStatus] = useState("Connecting...");
+  const [status, setStatus] = useState(
+    incomingCall ? "Connecting..." : "Calling..."
+  );
+
+  const callIdRef = useRef(
+    incomingCall?.id || `${Date.now()}_${currentUser.uid}`
+  );
+  const endedRef = useRef(false);
 
   useEffect(() => {
 
-    startCall();
-
-    return () => {
-
-      closeConnection();
-
-    };
-
-  }, []);
-
-  async function startCall() {
-
-    await createPeer();
-
-    const stream =
-      await getLocalStream(true);
-
-    setLocalStream(stream);
-
-    const offer =
-      await createOffer();
-
-    const callId =
-      Date.now().toString();
-
-    await createCall(callId, offer);
-
-    onIceCandidate(async candidate => {
-
-      await sendIceCandidate(
-        callId,
-        candidate
-      );
-
-    });
-
-    onRemoteStream(stream => {
-
+    listenForRemote(stream => {
       setRemoteStream(stream);
-
       setStatus("Connected");
-
     });
 
-    listenCall(callId, async call => {
+    if (incomingCall) {
+      answerAsReceiver();
+    } else {
+      startAsCaller();
+    }
 
-      if (call.answer) {
+    const unsubscribe = listenCall(callIdRef.current, call => {
 
-        await setRemoteDescription(
-          call.answer
-        );
-
+      if (call.status === "declined" || call.status === "ended") {
+        if (!endedRef.current) {
+          endedRef.current = true;
+          endCurrentCall();
+          navigation.goBack();
+        }
       }
 
     });
 
-    listenCandidates(callId, async candidate => {
+    return () => {
+      unsubscribe?.();
+      endCurrentCall();
+    };
 
-      await addIceCandidate(candidate);
+  }, []);
 
-    });
+  async function startAsCaller() {
+
+    await createCallDoc(callIdRef.current, currentUser, user, "video");
+
+    const stream = await startWebRTCCall(callIdRef.current, true);
+
+    setLocalStream(stream);
 
   }
+
+  async function answerAsReceiver() {
+
+    await markCallAnswered(callIdRef.current);
+
+    const stream = await answerIncomingCall(callIdRef.current, true);
+
+    setLocalStream(stream);
+    setStatus("Connected");
+
+  }
+
+  function handleEndCall() {
+
+    endedRef.current = true;
+    markCallEnded(callIdRef.current);
+    endCurrentCall();
+    navigation.goBack();
+
+  }
+
+  const callerLabel =
+    user?.displayName ||
+    incomingCall?.callerName ||
+    "Unknown";
 
   return (
 
@@ -114,9 +123,10 @@ export default function VideoCallScreen({
 
       ) : (
 
-        <Text style={styles.wait}>
-          {status}
-        </Text>
+        <View style={styles.waitContainer}>
+          <Text style={styles.name}>{callerLabel}</Text>
+          <Text style={styles.wait}>{status}</Text>
+        </View>
 
       )}
 
@@ -125,19 +135,14 @@ export default function VideoCallScreen({
         <RTCView
           streamURL={localStream.toURL()}
           style={styles.local}
+          zOrder={1}
         />
 
       )}
 
       <TouchableOpacity
         style={styles.end}
-        onPress={() => {
-
-          closeConnection();
-
-          navigation.goBack();
-
-        }}
+        onPress={handleEndCall}
       >
 
         <Text style={styles.endText}>
@@ -168,14 +173,27 @@ const styles = StyleSheet.create({
     width:120,
     height:180,
     right:15,
-    top:50
+    top:50,
+    borderRadius:10
+  },
+
+  waitContainer:{
+    flex:1,
+    justifyContent:"center",
+    alignItems:"center"
+  },
+
+  name:{
+    color:"#E6F7F3",
+    fontSize:26,
+    fontWeight:"bold"
   },
 
   wait:{
-    color:"#fff",
+    color:"#ccc",
     textAlign:"center",
-    marginTop:100,
-    fontSize:20
+    marginTop:10,
+    fontSize:18
   },
 
   end:{
@@ -189,7 +207,7 @@ const styles = StyleSheet.create({
   },
 
   endText:{
-    color:"#fff",
+    color:"#E6F7F3",
     fontWeight:"bold",
     fontSize:18
   }

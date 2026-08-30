@@ -1,12 +1,11 @@
 import * as DocumentPicker from "expo-document-picker";
 import {
-  getStorage,
   ref,
   uploadBytes,
   getDownloadURL
 } from "firebase/storage";
 
-const storage = getStorage();
+import { storage } from "../config/firebase";
 
 export async function pickDocument() {
 

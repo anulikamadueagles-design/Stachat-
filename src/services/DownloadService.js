@@ -1,4 +1,8 @@
-import * as FileSystem from "expo-file-system";
+// expo-file-system v19+ moved documentDirectory/downloadAsync/etc to a
+// /legacy subpath — importing from the bare package no longer exposes
+// them (it's the new File/Directory class API instead), which would
+// have made every document open/download silently fail.
+import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 
 export async function downloadFile(url, fileName) {

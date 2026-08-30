@@ -46,6 +46,7 @@ export default function LoginScreen({ navigation }) {
       <TextInput
         style={styles.input}
         placeholder="Email"
+        placeholderTextColor="#9BA3AE"
         keyboardType="email-address"
         autoCapitalize="none"
         value={email}
@@ -55,6 +56,7 @@ export default function LoginScreen({ navigation }) {
       <TextInput
         style={styles.input}
         placeholder="Password"
+        placeholderTextColor="#9BA3AE"
         secureTextEntry
         value={password}
         onChangeText={setPassword}
@@ -95,38 +97,40 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     padding: 25,
-    backgroundColor: "#ECE5DD"
+    backgroundColor: "#0D1117"
   },
 
   title: {
     fontSize: 36,
     fontWeight: "bold",
     textAlign: "center",
-    color: "#075E54"
+    color: "#00BFA5"
   },
 
   subtitle: {
     textAlign: "center",
     marginBottom: 30,
-    fontSize: 20
+    fontSize: 20,
+    color: "#E6F7F3"
   },
 
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: "#12181C",
     borderRadius: 10,
     padding: 15,
-    marginBottom: 15
+    marginBottom: 15,
+    color: "#E6F7F3"
   },
 
   button: {
-    backgroundColor: "#075E54",
+    backgroundColor: "#00E676",
     padding: 15,
     borderRadius: 10,
     alignItems: "center"
   },
 
   buttonText: {
-    color: "#fff",
+    color: "#E6F7F3",
     fontWeight: "bold",
     fontSize: 16
   },
@@ -134,7 +138,7 @@ const styles = StyleSheet.create({
   link: {
     textAlign: "center",
     marginTop: 20,
-    color: "#075E54",
+    color: "#00BFA5",
     fontWeight: "600"
   }
 

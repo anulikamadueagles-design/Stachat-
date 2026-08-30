@@ -7,10 +7,10 @@ import {
   StyleSheet
 } from "react-native";
 
-import { Audio } from "expo-av";
+import { Audio, Video, ResizeMode } from "expo-av";
 import { downloadFile } from "../services/DownloadService";
 
-export default function MessageBubble({ message }) {
+function MessageBubble({ message, onLongPress }) {
 
   async function playVoice() {
 
@@ -79,9 +79,32 @@ export default function MessageBubble({ message }) {
 
   }
 
+  // Deleted-for-everyone messages show a placeholder instead of content,
+  // for both sides of the conversation.
+  if (message.deletedForEveryone) {
+    return (
+      <View
+        style={[
+          styles.container,
+          message.mine ? styles.mine : styles.other,
+        ]}
+      >
+        <Text style={styles.deletedText}>
+          🚫 This message was deleted
+        </Text>
+      </View>
+    );
+  }
+
+  const reactionEntries = message.reactions
+    ? Object.entries(message.reactions).filter(([, emoji]) => emoji)
+    : [];
+
   return (
 
-    <View
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onLongPress={() => onLongPress?.(message)}
       style={[
         styles.container,
         message.mine
@@ -89,6 +112,26 @@ export default function MessageBubble({ message }) {
           : styles.other
       ]}
     >
+
+      {message.forwarded ? (
+        <Text style={styles.forwardedLabel}>
+          ↪ Forwarded
+        </Text>
+      ) : null}
+
+      {!message.mine && message.senderName ? (
+        <Text style={styles.senderName}>
+          {message.senderName}
+        </Text>
+      ) : null}
+
+      {message.replyTo ? (
+        <View style={styles.replyBox}>
+          <Text style={styles.replyText} numberOfLines={1}>
+            {message.replyTo.text || "Media message"}
+          </Text>
+        </View>
+      ) : null}
 
       {message.text ? (
 
@@ -103,6 +146,17 @@ export default function MessageBubble({ message }) {
         <Image
           source={{ uri: message.imageUrl }}
           style={styles.image}
+        />
+
+      ) : null}
+
+      {message.videoUrl ? (
+
+        <Video
+          source={{ uri: message.videoUrl }}
+          style={styles.video}
+          useNativeControls
+          resizeMode={ResizeMode.COVER}
         />
 
       ) : null}
@@ -151,23 +205,35 @@ export default function MessageBubble({ message }) {
 
       ) : null}
 
+      {reactionEntries.length > 0 ? (
+        <View style={styles.reactionsRow}>
+          {reactionEntries.map(([uid, emoji]) => (
+            <Text key={uid} style={styles.reactionEmoji}>
+              {emoji}
+            </Text>
+          ))}
+        </View>
+      ) : null}
+
       <View style={styles.footer}>
 
         <Text style={styles.time}>
           {formatTime()}
         </Text>
 
-        <Text style={styles.tick}>
-          {message.status==="read"
-            ? "✓✓"
-            : message.status==="delivered"
-            ? "✓✓"
-            : "✓"}
-        </Text>
+        {message.mine ? (
+          <Text style={styles.tick}>
+            {message.status==="read"
+              ? "✓✓"
+              : message.status==="delivered"
+              ? "✓✓"
+              : "✓"}
+          </Text>
+        ) : null}
 
       </View>
 
-    </View>
+    </TouchableOpacity>
 
   );
 
@@ -184,15 +250,16 @@ const styles = StyleSheet.create({
 
   mine:{
     alignSelf:"flex-end",
-    backgroundColor:"#DCF8C6"
+    backgroundColor:"#0B4F46"
   },
 
   other:{
     alignSelf:"flex-start",
-    backgroundColor:"#FFFFFF"
+    backgroundColor:"#12181C"
   },
 
   text:{
+    color: "#E6F7F3",
     fontSize:16
   },
 
@@ -203,8 +270,60 @@ const styles = StyleSheet.create({
     marginTop:6
   },
 
+  video:{
+    width:220,
+    height:220,
+    borderRadius:10,
+    marginTop:6,
+    backgroundColor:"#000"
+  },
+
+  deletedText:{
+    fontSize:14,
+    color:"#9BA3AE",
+    fontStyle:"italic"
+  },
+
+  forwardedLabel:{
+    fontSize:11,
+    color:"#9BA3AE",
+    fontStyle:"italic",
+    marginBottom:4
+  },
+
+  senderName:{
+    fontSize:12,
+    fontWeight:"bold",
+    color:"#00BFA5",
+    marginBottom:2
+  },
+
+  replyBox:{
+    borderLeftWidth:3,
+    borderLeftColor:"#00BFA5",
+    backgroundColor:"rgba(0,0,0,0.04)",
+    padding:6,
+    borderRadius:6,
+    marginBottom:6
+  },
+
+  replyText:{
+    fontSize:13,
+    color:"#9BA3AE"
+  },
+
+  reactionsRow:{
+    flexDirection:"row",
+    marginTop:6
+  },
+
+  reactionEmoji:{
+    fontSize:16,
+    marginRight:4
+  },
+
   voice:{
-    color:"#075E54",
+    color:"#00BFA5",
     fontWeight:"bold",
     marginTop:8
   },
@@ -212,7 +331,7 @@ const styles = StyleSheet.create({
   fileBox:{
     flexDirection:"row",
     alignItems:"center",
-    backgroundColor:"#F2F2F2",
+    backgroundColor:"#1C2128",
     padding:10,
     borderRadius:10,
     marginTop:8
@@ -224,12 +343,13 @@ const styles = StyleSheet.create({
   },
 
   fileName:{
+    color: "#E6F7F3",
     fontWeight:"bold",
     fontSize:15
   },
 
   download:{
-    color:"#075E54",
+    color:"#00BFA5",
     marginTop:4
   },
 
@@ -241,13 +361,18 @@ const styles = StyleSheet.create({
 
   time:{
     fontSize:11,
-    color:"#666"
+    color:"#9BA3AE"
   },
 
   tick:{
     marginLeft:5,
-    color:"#34B7F1",
+    color:"#00BFA5",
     fontSize:12
   }
 
 });
+
+// Message lists can be long-running and re-render often (new messages,
+// typing indicators, read receipts). Memoizing avoids re-rendering
+// every bubble in the list each time only one message actually changed.
+export default React.memo(MessageBubble);

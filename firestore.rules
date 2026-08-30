@@ -1,0 +1,131 @@
+rules_version = '2';
+
+// Deploy this via Firebase Console > Firestore Database > Rules (paste
+// and Publish), or `firebase deploy --only firestore:rules` if you use
+// the Firebase CLI.
+//
+// Nothing in the app enforces this yet — the client-side `isAdmin`
+// checks (e.g. in AdminDashboardScreen) only hide UI, they don't stop
+// a malicious client from writing directly to Firestore. These rules
+// are what actually stops that.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // True if `blockerUid` has blocked the caller — used to stop a
+    // blocked user's messages from ever being written, not just hide
+    // them client-side (client-side hiding alone doesn't stop delivery).
+    function isBlockedBy(blockerUid) {
+      return request.auth.uid in
+        get(/databases/$(database)/documents/users/$(blockerUid)).data.get('blockedUsers', []);
+    }
+
+    // ---- Users ----
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(uid);
+      // Anyone can update their own profile, EXCEPT the isAdmin field —
+      // only an existing admin (or the console) can grant admin.
+      allow update: if isOwner(uid) &&
+        (!('isAdmin' in request.resource.data) ||
+         request.resource.data.isAdmin == resource.data.isAdmin) ||
+        isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ---- 1:1 chats ----
+    match /privateChats/{chatId} {
+      allow read, write: if isSignedIn() &&
+        request.auth.uid in resource.data.members;
+      allow create: if isSignedIn();
+
+      match /messages/{messageId} {
+        allow read: if isSignedIn();
+        allow update, delete: if isSignedIn();
+        // Can't create a message if the recipient has blocked you.
+        // (receiverUid is set by the client on every message doc —
+        // see ChatService.sendPrivateMessage.)
+        allow create: if isSignedIn() &&
+          !isBlockedBy(request.resource.data.receiverUid);
+      }
+    }
+
+    // ---- Groups ----
+    match /groups/{groupId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() &&
+        (resource.data.owner == request.auth.uid ||
+         request.auth.uid in resource.data.members);
+
+      match /messages/{messageId} {
+        allow read, write: if isSignedIn();
+      }
+    }
+
+    // ---- Calls / WebRTC signaling ----
+    match /calls/{callId} {
+      allow read, write: if isSignedIn();
+
+      match /{sub=**} {
+        allow read, write: if isSignedIn();
+      }
+    }
+
+    // ---- Status/Stories ----
+    match /status/{statusId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if isSignedIn(); // needed for arrayUnion viewedBy from any viewer
+      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    // ---- Reports (block/report feature) ----
+    match /reports/{reportId} {
+      // Only admins can browse the list of reports; a reporter can
+      // create one but not read others' reports back.
+      allow read: if isAdmin();
+      allow create: if isSignedIn() &&
+        request.resource.data.reporterUid == request.auth.uid &&
+        request.resource.data.status == 'open';
+      allow update, delete: if isAdmin();
+    }
+
+    // ---- Ads / monetization platform ----
+    match /ads/{adId} {
+      // Ad content is visible to everyone (so placements can render).
+      allow read: if true;
+
+      // Advertisers may only ever create a request in the unpaid,
+      // pending state — they cannot create an ad that's already
+      // "active" or mark themselves as "paid".
+      allow create: if isSignedIn() &&
+        request.resource.data.status in ['pending_payment', 'active'] &&
+        (request.resource.data.status == 'active' ? isAdmin() : true) &&
+        (request.resource.data.paymentStatus == 'paid' ? isAdmin() : true);
+
+      // Anyone signed in may increment impressions/clicks (that's how
+      // tracking works client-side); only an admin may change anything
+      // else, including status/paymentStatus.
+      allow update: if isAdmin() ||
+        (isSignedIn() &&
+         request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(['impressions', 'clicks']));
+
+      allow delete: if isAdmin();
+    }
+  }
+}

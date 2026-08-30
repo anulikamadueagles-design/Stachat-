@@ -14,11 +14,15 @@ import {
 
 import { db } from "../config/firebase";
 import { AuthContext } from "../context/AuthContext";
+import { forwardMessage } from "../services/ChatService";
+import { addMember } from "../groupchat/GroupService";
 
-export default function ContactsScreen({ navigation }) {
+export default function ContactsScreen({ navigation, route }) {
 
   const { user } = useContext(AuthContext);
   const [users, setUsers] = useState([]);
+  const forwardMessageParam = route?.params?.forwardMessage || null;
+  const addToGroupId = route?.params?.addToGroupId || null;
 
   useEffect(() => {
 
@@ -44,15 +48,31 @@ export default function ContactsScreen({ navigation }) {
 
   function renderItem({ item }) {
 
+    async function handlePress() {
+
+      if (forwardMessageParam) {
+        await forwardMessage(user, item, forwardMessageParam);
+        navigation.navigate("PrivateChat", { user: item });
+        return;
+      }
+
+      if (addToGroupId) {
+        await addMember(addToGroupId, item.uid);
+        navigation.goBack();
+        return;
+      }
+
+      navigation.navigate("PrivateChat", {
+        user: item
+      });
+
+    }
+
     return (
 
       <TouchableOpacity
         style={styles.card}
-        onPress={() =>
-          navigation.navigate("PrivateChat", {
-            user: item
-          })
-        }
+        onPress={handlePress}
       >
 
         <View>
@@ -72,7 +92,7 @@ export default function ContactsScreen({ navigation }) {
             styles.status,
             {
               backgroundColor:
-                item.online ? "#25D366" : "#999"
+                item.online ? "#00E676" : "#9BA3AE"
             }
           ]}
         />
@@ -87,7 +107,19 @@ export default function ContactsScreen({ navigation }) {
 
     <View style={styles.container}>
 
+      {forwardMessageParam || addToGroupId ? (
+        <View style={styles.forwardBanner}>
+          <Text style={styles.forwardBannerText}>
+            {forwardMessageParam ? "Forward message to..." : "Add member to group..."}
+          </Text>
+        </View>
+      ) : null}
+
       <FlatList
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        initialNumToRender={12}
         data={users}
         keyExtractor={(item) => item.uid}
         renderItem={renderItem}
@@ -103,14 +135,25 @@ const styles = StyleSheet.create({
 
   container:{
     flex:1,
-    backgroundColor:"#ECE5DD"
+    backgroundColor:"#0D1117"
+  },
+
+  forwardBanner:{
+    backgroundColor:"#0D1117",
+    padding:12
+  },
+
+  forwardBannerText:{
+    color:"#E6F7F3",
+    fontWeight:"bold",
+    textAlign:"center"
   },
 
   card:{
     flexDirection:"row",
     justifyContent:"space-between",
     alignItems:"center",
-    backgroundColor:"#fff",
+    backgroundColor:"#12181C",
     padding:15,
     marginHorizontal:10,
     marginTop:10,
@@ -118,12 +161,13 @@ const styles = StyleSheet.create({
   },
 
   name:{
+    color: "#E6F7F3",
     fontSize:17,
     fontWeight:"bold"
   },
 
   email:{
-    color:"gray",
+    color:"#9BA3AE",
     marginTop:4
   },
 
